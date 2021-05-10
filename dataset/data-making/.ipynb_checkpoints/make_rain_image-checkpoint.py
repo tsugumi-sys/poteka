@@ -53,6 +53,9 @@ try:
                                 ax = plt.axes(projection=ccrs.PlateCarree())
                                 ax.set_extent([120.90, 121.150, 14.350, 14.760])
                                 ax.add_feature(cfeature.COASTLINE)
+                                gl = ax.gridlines(draw_labels=True, alpha=0)
+                                gl.right_labels = False
+                                gl.top_labels = False
 
                                 clevs = [0, 5, 7.5, 10, 15, 20, 30, 40,
                                         50, 70, 100, 150, 200, 250, 300, 400, 500, 600, 750]
