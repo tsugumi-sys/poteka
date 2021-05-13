@@ -67,7 +67,8 @@ def make_temp_image():
                                     gl.top_labels = False
 
 
-                                    clevs = [10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45]
+                                    clevs = [i for i in range(10, 46, 1)]
+                                    print(clevs)
                                     cmap = cm.rainbow
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 

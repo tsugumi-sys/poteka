@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 import tracemalloc
 import traceback
 
-from load_data import load_data, load_rain_data
+from load_image_data import load_data, load_dense_rain_data
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
@@ -22,22 +22,25 @@ def send_line(msg):
     res = requests.post(line_notify_endpoint, headers, data)
     return res.status_code
 
-def create_model():
+def create_model(img_height=60, img_width=36):
     model = keras.Sequential([
         layers.Input(
-            shape=(None, 50, 50, 3)
+            shape=(None, img_height, img_width, 3)
         ),
         layers.ConvLSTM2D(
             filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
         ),
+        layers.BatchNormalization(),
         layers.ConvLSTM2D(
             filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
         ),
+        layers.BatchNormalization(),
         layers.ConvLSTM2D(
             filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
         ),
+        layers.BatchNormalization(),
         layers.Conv3D(
-            filters=3, kernel_size=(3, 3, 3), padding='same'
+            filters=3, kernel_size=(3, 3, 3), padding='same', activation='sigmoid'
         )
     ])
 
@@ -49,9 +52,12 @@ def create_model():
     model.summary()
     return model
 
-# Multi Variable Model
-def train_model(model_name='model1'):
-    X, y = load_data()
+# Train with Image: rainbow colored
+def train_rainbow_image_model(model_name='model1'):
+    print('-' * 80)
+    print('This is training with dense colored images.')
+    print('-'*80)
+    X, y, data_config = load_data()
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
 
     early_stopping = callbacks.EarlyStopping(
@@ -69,7 +75,7 @@ def train_model(model_name='model1'):
         verbose=1
     )
 
-    save_path = f'../../model/{model_name}/'
+    save_path = f'../../model/train_with_image/{model_name}/'
     if not os.path.exists(save_path):
         os.mkdir(save_path)
 
@@ -78,9 +84,12 @@ def train_model(model_name='model1'):
     model.save(save_path + 'model.h5')
     print('Model Successfully Saved')
 
-# Only Rain Model
-def train_rain_model(model_name='model2'):
-    X, y = load_rain_data()
+# Train with Image: dense coloered
+def train_dense_rain_model(model_name='model2'):
+    print('-' * 80)
+    print('This is training with dense colored images.')
+    print('-'*80)
+    X, y, data_config = load_dense_rain_data()
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
 
     early_stopping = callbacks.EarlyStopping(
@@ -98,7 +107,7 @@ def train_rain_model(model_name='model2'):
         verbose=1
     )
 
-    save_path = f'../../model/{model_name}/'
+    save_path = f'../../model/train_with_image/{model_name}/'
     if not os.path.exists(save_path):
         os.mkdir(save_path)
 
@@ -106,10 +115,11 @@ def train_rain_model(model_name='model2'):
     hist.to_csv(save_path + 'history.csv')
     model.save(save_path + 'model.h5')
     print('Model Successfully Saved')
+
 
 if __name__ == '__main__':
     try:
-        train_model()
+        train_rainbow_image_model()
         send_line('Successfully Completed')
     except:
         send_line('Process has Stoped with some Error')

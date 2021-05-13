@@ -1,0 +1,5 @@
+from train import train_model, train_rain_model
+from train_with_image import train_dense_rain_model, train_rainbow_image_model
+
+train_dense_rain_model()
+train_rainbow_image_model()
