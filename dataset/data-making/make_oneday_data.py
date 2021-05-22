@@ -29,8 +29,8 @@ folder_path = "../../../data/accumulated-raf-data"
 
 ob_locations = pd.read_csv('../../../p-poteka-config/observation_point.csv', index_col="Name")
 
-years = ['2019', '2020']
-monthes = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11']
+years = ['2019']#, '2020']
+monthes = ['10', '11']#['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11']
 dates = [make_dates(i) for i in range(1, 32)]
 
 cols = ['LON', 'LAT', 'hour-rain', 'AT1', 'RH1', 'SOL', 'WD1', 'WS1']
@@ -45,7 +45,10 @@ for year in years:
                 path = folder_path + f'/{ob_point}/{year}/{month}/{year}-{month}-{date}/data.csv'
                 if os.path.exists(path):
                     count += 1
-            if count > 30:
+            
+            # Create One day Data
+            #if count > 30:
+            if 3 == 3:
                 print(f'{year}-{month}-{date} ', count)
                 ob_data = []
                 ob_names = []

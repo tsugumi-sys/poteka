@@ -81,30 +81,30 @@ def make_wind_image():
                                                 for y in range(y_bottom, y_above + 1):
                                                     val += v_wind_grad[x, y] + u_wind_grad[x, y]
                                             wind_div[i, j] = val
-                                    #wind_div = v_wind_grad + u_wind_grad
+                                    
                                     wind_div = np.where(wind_div > 10, 10, wind_div)
                                     wind_div = np.where(wind_div < -10, -10, wind_div)
                                     print(wind_div.max(), wind_div.min())
 
                                     # Save Fig
-                                    # fig = plt.figure(figsize=(7, 8), dpi=80)
-                                    # ax = plt.axes(projection=ccrs.PlateCarree())
-                                    # ax.set_extent([120.90, 121.150, 14.350, 14.760])
-                                    # ax.add_feature(cfeature.COASTLINE)
-                                    # gl = ax.gridlines(draw_labels=True, alpha=0)
-                                    # gl.right_labels = False
-                                    # gl.top_labels = False
+                                    fig = plt.figure(figsize=(7, 8), dpi=80)
+                                    ax = plt.axes(projection=ccrs.PlateCarree())
+                                    ax.set_extent([120.90, 121.150, 14.350, 14.760])
+                                    ax.add_feature(cfeature.COASTLINE)
+                                    gl = ax.gridlines(draw_labels=True, alpha=0)
+                                    gl.right_labels = False
+                                    gl.top_labels = False
                                     
-                                    # #clevs = [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
-                                    # clevs = list(range(-10, 11))
-                                    # cmap = cm.coolwarm
-                                    # norm = mcolors.BoundaryNorm(clevs, cmap.N)
+                                    # Colror Bar
+                                    clevs = list(range(-10, 11))
+                                    cmap = cm.coolwarm
+                                    norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    # cs = ax.contourf(xi, yi, wind_div, clevs, cmap=cmap, norm=norm)
-                                    # cbar = plt.colorbar(cs, orientation='vertical')
-                                    # cbar.set_label('wind divergence (/second)')
-                                    # plt.quiver(xi, yi, u_wind, v_wind)
-                                    # ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
+                                    cs = ax.contourf(xi, yi, wind_div, clevs, cmap=cmap, norm=norm)
+                                    cbar = plt.colorbar(cs, orientation='vertical')
+                                    cbar.set_label('wind divergence (/second)')
+                                    plt.quiver(xi, yi, u_wind, v_wind)
+                                    ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
 
                                     # Save Image and CSV
                                     save_path = '../../../data/wind_image'
@@ -114,9 +114,9 @@ def make_wind_image():
                                             os.mkdir(save_path + f'/{folder}')
                                         save_path += f'/{folder}'
                                     save_csv_path = save_path + f'/{data_file}'
-                                    #save_path += '/{}'.format(data_file.replace('.csv', '.png'))
+                                    save_path += '/{}'.format(data_file.replace('.csv', '.png'))
                                     
-                                    #plt.savefig(save_path)
+                                    plt.savefig(save_path)
 
                                     save_df = pd.DataFrame(wind_div, index=np.flip(grid_lat), columns=grid_lon)
                                     save_df.to_csv(save_csv_path)
@@ -135,7 +135,91 @@ def make_wind_image():
         send_line_notify("Process has Stopped with some error!!!")
         send_line_notify(traceback.format_exc())
         print(traceback.format_exc())
+
+
+def make_abs_wind_image():
+
+    tracemalloc.start()
+    failed_path = []
+    try:
+        root_folder = '../../../data/one_day_data'
+
+        for year in os.listdir(root_folder):
+            for month in os.listdir(root_folder + f'/{year}'):
+                for date in os.listdir(root_folder + f'/{year}/{month}'):
+                    if len(os.listdir(root_folder + f'/{year}/{month}/{date}')) > 0:
+                        data_files = os.listdir(root_folder + f'/{year}/{month}/{date}')
+                        for data_file in data_files:
+                            path = root_folder + f'/{year}/{month}/{date}/{data_file}'
+                            if os.path.exists(path):
+                                print('-'*80)
+                                print('PATH: ', path)
+                                try:
+                                    df = pd.read_csv(path, index_col=0)
+                                    
+                                    # Interpolate Data
+                                    grid_size = 50
+                                    wind_rbfi = Rbf(df['LON'], df['LAT'], df['WS1'].values, function='gaussian')
+                                    
+                                    grid_lon = np.round(np.linspace(120.90, 121.150, grid_size), decimals=3)
+                                    grid_lat = np.round(np.linspace(14.350, 14.760, grid_size), decimals=3)
+                                    xi, yi = np.meshgrid(grid_lon, grid_lat)
+                                    
+                                    abs_wind = wind_rbfi(xi, yi)
+                                    abs_wind = np.where(abs_wind > 30, 30, abs_wind)
+                                    abs_wind = np.where(abs_wind < 0, 0, abs_wind)
+                                    
+
+                                    # Save Fig
+                                    fig = plt.figure(figsize=(7, 8), dpi=80)
+                                    ax = plt.axes(projection=ccrs.PlateCarree())
+                                    ax.set_extent([120.90, 121.150, 14.350, 14.760])
+                                    ax.add_feature(cfeature.COASTLINE)
+                                    gl = ax.gridlines(draw_labels=True, alpha=0)
+                                    gl.right_labels = False
+                                    gl.top_labels = False
+                                    
+                                    #clevs = [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
+                                    clevs = list(range(0, 31, 2))
+                                    cmap = cm.viridis
+                                    norm = mcolors.BoundaryNorm(clevs, cmap.N)
+
+                                    cs = ax.contourf(xi, yi, abs_wind, clevs, cmap=cmap, norm=norm)
+                                    cbar = plt.colorbar(cs, orientation='vertical')
+                                    cbar.set_label('wind speed (/second)')
+                                    ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
+
+                                    # Save Image and CSV
+                                    save_path = '../../../data/abs_wind_image'
+                                    folders = [year, month, date]
+                                    for folder in folders:
+                                        if not os.path.exists(save_path + f'/{folder}'):
+                                            os.mkdir(save_path + f'/{folder}')
+                                        save_path += f'/{folder}'
+                                    save_csv_path = save_path + f'/{data_file}'
+                                    save_path += '/{}'.format(data_file.replace('.csv', '.png'))
+                                    
+                                    plt.savefig(save_path)
+
+                                    save_df = pd.DataFrame(abs_wind, index=np.flip(grid_lat), columns=grid_lon)
+                                    save_df.to_csv(save_csv_path)
+                                    print('Sucessfully Saved')
+
+                                    plt.close()
+                                except:
+                                    print('!'*10,' Failed ', '!'*10)
+                                    failed_path.append(path)
+                                    print(traceback.format_exc())
+                                    continue
+        failed = pd.DataFrame({'path': failed_path})
+        failed.to_csv('failed.csv')
+        send_line_notify('Succeccfuly Completed!!!')
+    except:
+        send_line_notify("Process has Stopped with some error!!!")
+        send_line_notify(traceback.format_exc())
+        print(traceback.format_exc())
         
 if __name__ == '__main__':
-    make_wind_image()
+    #make_wind_image()
+    make_abs_wind_image()
                         

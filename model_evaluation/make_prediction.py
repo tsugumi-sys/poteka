@@ -23,6 +23,9 @@ def save_csv(data_arr, path: str):
 
 
 def make_prediction(model_name='model1'):
+    print('-' * 80)
+    print('This is prediction with multi variable trained model')
+    print('-'*80)
     model = load_model(f'../../model/{model_name}/model.h5')
     X, y, data_config = load_data()
     preds = model.predict(X)
@@ -62,9 +65,16 @@ def make_prediction(model_name='model1'):
 
 # image trained model
 def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
+    # Background Image
+    bg = Image.open('bg.png').convert('RGBA')
+    img_clear = Image.new('RGBA', bg.size, (255, 255, 255, 0))
+
+    print('-' * 80)
+    print(f'This is making prediction of {img_color} colored images.')
+    print('-'*80)
     model = load_model(f'../../model/train_with_image/{model_name}/model.h5')
     if img_color == 'rainbow':
-        X, y, data_config = load_dense_rain_data()
+        X, y, data_config = load_rainbow_rain_data()
     else:
         X, y, data_config = load_dense_rain_data()
     preds = model.predict(X)
@@ -82,13 +92,14 @@ def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
             for time_list in time_lists[count]:
                 time_count = 0
                 for time in time_list:
-                    path = '../../data/prediction_image/train_with_image/'
+                    path = '../../data/prediction_image/train_with_image/30min_'
                     for item in [model_name, year, month, date]:
                         path += f'{item}/'
                         if not os.path.exists(path):
                             os.mkdir(path)
                     print(preds[data_count][time_count].max(), preds[data_count][time_count].min(), preds[data_count][time_count].shape)
                     img_arr = preds[data_count][time_count]
+                    print(img_arr.max(), img_arr.min())
                     img_arr = np.where(img_arr > 1, 1, img_arr)
                     img_arr = np.where(img_arr < 0, 0, img_arr)
                     img_arr = img_arr * 255
@@ -96,6 +107,9 @@ def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
                     img = Image.fromarray(img_arr)
                     img = img.resize((299, 493))
                     img.save(path + time)
+                    img_clear.paste(img, (118, 77))
+                    img_with_bg = Image.alpha_composite(img_clear, bg)
+                    img_with_bg.save(path + time.replace('croped', ''))
 
                     time_count += 1
                 data_count += 1

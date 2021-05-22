@@ -41,7 +41,7 @@ def create_time_list(year=2020, month=1, date=1):
 
 
 
-def load_rainbow_rain_data(img_height=75, img_width=45):
+def load_rainbow_rain_data(img_height=60, img_width=36):
     tracemalloc.start()
 
     time_list = create_time_list()
@@ -50,7 +50,7 @@ def load_rainbow_rain_data(img_height=75, img_width=45):
     label_arr = []
 
     year = 2019
-    monthes = ['11']
+    monthes = ['10', '11']
     dates_list = []
     time_set = []
     for month in monthes:
@@ -65,8 +65,9 @@ def load_rainbow_rain_data(img_height=75, img_width=45):
             if os.path.exists(rain_path):
                 rain_file_num = len(os.listdir(rain_path))
                 if rain_file_num == 288:
-                    for step in range(0, len(time_list) - 6, 6):
+                    for step in range(0, len(time_list) - 9, 3):
                         file_names = [f'{dt.hour}-{dt.minute}croped.png' for dt in time_list[step:step+12]]
+                        
                         time_subset.append(file_names[6:])
                         
                         subset_arrs = []
@@ -75,7 +76,7 @@ def load_rainbow_rain_data(img_height=75, img_width=45):
                             rain_file_path = rain_path + f'/{file_name}'
                             
                             # Create ndarray
-                            img_arr = load_image_data(rain_file_path)
+                            img_arr = load_image_data(rain_file_path,img_height=img_height, img_width=img_width)
                             
                             subset_arrs.append(img_arr)
                         
@@ -105,7 +106,7 @@ def load_dense_rain_data(img_height=60, img_width=36):
     label_arr = []
 
     year = 2019
-    monthes = ['11']
+    monthes = ['10', '11']
     dates_list = []
     time_set = []
     for month in monthes:
@@ -120,7 +121,7 @@ def load_dense_rain_data(img_height=60, img_width=36):
             if os.path.exists(rain_path):
                 rain_file_num = len(os.listdir(rain_path))
                 if rain_file_num == 288:
-                    for step in range(0, len(time_list) - 6, 6):
+                    for step in range(0, len(time_list) - 9, 3):
                         file_names = [f'{dt.hour}-{dt.minute}croped.png' for dt in time_list[step:step+12]]
                         time_subset.append(file_names[6:])
                         

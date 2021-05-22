@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from tensorflow import keras
 import tensorflow as tf
-from tensorflow.keras import layers, callbacks
+from tensorflow.keras import layers, callbacks, metrics
 from sklearn.model_selection import train_test_split
 import tracemalloc
 import traceback
@@ -45,9 +45,9 @@ def create_model(img_height=60, img_width=36):
     ])
 
     model.compile(
-        optimizer='adam',
-        loss='mae',
-        metrics=['mae']
+        optimizer='adadelta',
+        loss='binary_crossentropy',
+        metrics=['mae', metrics.RootMeanSquaredError()]
     )
     model.summary()
     return model
@@ -85,7 +85,7 @@ def train_rainbow_image_model(model_name='model1'):
     print('Model Successfully Saved')
 
 # Train with Image: dense coloered
-def train_dense_rain_model(model_name='model2'):
+def train_dense_image_model(model_name='model2'):
     print('-' * 80)
     print('This is training with dense colored images.')
     print('-'*80)
@@ -120,6 +120,7 @@ def train_dense_rain_model(model_name='model2'):
 if __name__ == '__main__':
     try:
         train_rainbow_image_model()
+        train_dense_image_model()
         send_line('Successfully Completed')
     except:
         send_line('Process has Stoped with some Error')

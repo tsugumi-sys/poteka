@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from tensorflow import keras
 import tensorflow as tf
-from tensorflow.keras import layers, callbacks
+from tensorflow.keras import layers, callbacks, metrics
 from sklearn.model_selection import train_test_split
 import tracemalloc
 import traceback
@@ -30,21 +30,24 @@ def create_model():
         layers.ConvLSTM2D(
             filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
         ),
+        layers.BatchNormalization(),
         layers.ConvLSTM2D(
             filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
         ),
+        layers.BatchNormalization(),
         layers.ConvLSTM2D(
             filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
         ),
+        layers.BatchNormalization(),
         layers.Conv3D(
             filters=3, kernel_size=(3, 3, 3), padding='same'
         )
     ])
 
     model.compile(
-        optimizer='adam',
-        loss='mae',
-        metrics=['mae']
+        optimizer='adadelta', # adam
+        loss='binary_crossentropy',
+        metrics=['mae', metrics.RootMeanSquaredError()]
     )
     model.summary()
     return model
@@ -55,7 +58,7 @@ def train_model(model_name='model1'):
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
 
     early_stopping = callbacks.EarlyStopping(
-        min_delta= 0.000001,
+        min_delta= 0.001,
         patience= 20,
         restore_best_weights=True
     )

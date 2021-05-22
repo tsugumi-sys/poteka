@@ -33,8 +33,8 @@ def make_rain_image():
     try:
         root_folder = '../../../data/one_day_data'
 
-        for year in os.listdir(root_folder):
-            for month in os.listdir(root_folder + f'/{year}'):
+        for year in ['2019']:#os.listdir(root_folder):
+            for month in ['10', '11']:#os.listdir(root_folder + f'/{year}'):
                 for date in os.listdir(root_folder + f'/{year}/{month}'):
                     if len(os.listdir(root_folder + f'/{year}/{month}/{date}')) > 0:
                         data_files = os.listdir(root_folder + f'/{year}/{month}/{date}')
@@ -63,7 +63,7 @@ def make_rain_image():
                                     gl.top_labels = False
 
                                     clevs = [0, 5, 7.5, 10, 15, 20, 30, 40,
-                                            50, 70, 100, 150]
+                                            50, 70, 100]#, 150]
                                     cmap_data = [(1.0, 1.0, 1.0),
                                                 (0.3137255012989044, 0.8156862854957581, 0.8156862854957581),
                                                 (0.0, 1.0, 1.0),
@@ -76,7 +76,7 @@ def make_rain_image():
                                                 (1.0, 0.125490203499794, 0.501960813999176),
                                                 (0.9411764740943909, 0.250980406999588, 1.0),
                                                 (0.501960813999176, 0.125490203499794, 1.0),
-                                                (0.250980406999588, 0.250980406999588, 1.0),
+                                                #(0.250980406999588, 0.250980406999588, 1.0),
                                                 ]
                                     cmap = mcolors.ListedColormap(cmap_data, 'precipitation')
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
@@ -122,8 +122,8 @@ def make_dense_rain_image():
     try:
         root_folder = '../../../data/one_day_data'
 
-        for year in os.listdir(root_folder):
-            for month in os.listdir(root_folder + f'/{year}'):
+        for year in ['2019']:#os.listdir(root_folder):
+            for month in ['10', '11']:#os.listdir(root_folder + f'/{year}'):
                 for date in os.listdir(root_folder + f'/{year}/{month}'):
                     if len(os.listdir(root_folder + f'/{year}/{month}/{date}')) > 0:
                         data_files = os.listdir(root_folder + f'/{year}/{month}/{date}')
@@ -151,7 +151,7 @@ def make_dense_rain_image():
                                     gl.right_labels = False
                                     gl.top_labels = False
 
-                                    clevs = [i for i in range(1, 151)]
+                                    clevs = [i for i in range(1, 101)] # 101 or 151
                                     
 
                                     cmap = cm.BuPu
@@ -192,4 +192,5 @@ def make_dense_rain_image():
         print(traceback.format_exc())
                         
 if __name__ == '__main__':
+    make_rain_image()
     make_dense_rain_image()

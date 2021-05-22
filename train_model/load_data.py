@@ -39,7 +39,8 @@ def load_csv_data(path: str):
         
     elif 'wind' in path:
         # Scale [-10, 10]
-        return min_max_scaler(-10, 10, df.values)
+        # abs_wind [0, 30]
+        return min_max_scaler(0, 30, df.values)
 
 def datetime_range(start, end, delta):
     current = start
@@ -69,7 +70,7 @@ def load_data():
             print(date)
             rain_path = f'../../data/rain_image/{year}/{month}/{date}'
             temp_path = f'../../data/temp_image/{year}/{month}/{date}'
-            wind_path = f'../../data/wind_image/{year}/{month}/{date}'
+            wind_path = f'../../data/abs_wind_image/{year}/{month}/{date}'
             if os.path.exists(rain_path) and os.path.exists(temp_path) and os.path.exists(wind_path):
                 rain_file_num = len(os.listdir(rain_path))
                 temp_file_num = len(os.listdir(temp_path))
