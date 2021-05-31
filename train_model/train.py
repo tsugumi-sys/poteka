@@ -40,7 +40,7 @@ def create_model():
         ),
         layers.BatchNormalization(),
         layers.Conv3D(
-            filters=3, kernel_size=(3, 3, 3), padding='same'
+            filters=3, kernel_size=(3, 3, 3), padding='same', activation="sigmoid"
         )
     ])
 

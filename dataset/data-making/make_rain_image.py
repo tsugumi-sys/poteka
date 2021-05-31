@@ -31,8 +31,8 @@ def make_rain_image():
     try:
         root_folder = '../../../data/one_day_data'
 
-        for year in ['2019']:#os.listdir(root_folder):
-            for month in ['10', '11']:#os.listdir(root_folder + f'/{year}'):
+        for year in os.listdir(root_folder):
+            for month in os.listdir(root_folder + f'/{year}'):
                 for date in os.listdir(root_folder + f'/{year}/{month}'):
                     if len(os.listdir(root_folder + f'/{year}/{month}/{date}')) > 0:
                         data_files = os.listdir(root_folder + f'/{year}/{month}/{date}')
@@ -50,7 +50,7 @@ def make_rain_image():
                                     xi, yi = np.meshgrid(grid_lon, grid_lat)
                                     z1 = rbfi(xi, yi)
                                     rain_data = np.where(z1 > 0, z1, 0)
-                                    rain_data = np.where(rain_data > 150, 150, rain_data)
+                                    rain_data = np.where(rain_data > 100, 100, rain_data)
                                     fig = plt.figure(figsize=(7, 8), dpi=80)
                                     ax = plt.axes(projection=ccrs.PlateCarree())
                                     ax.set_extent([120.90, 121.150, 14.350, 14.760])
@@ -60,7 +60,7 @@ def make_rain_image():
                                     gl.top_labels = False
 
                                     clevs = [0, 5, 7.5, 10, 15, 20, 30, 40,
-                                            50, 70, 100, 150]
+                                            50, 70, 100]
                                     cmap_data = [(1.0, 1.0, 1.0),
                                                 (0.3137255012989044, 0.8156862854957581, 0.8156862854957581),
                                                 (0.0, 1.0, 1.0),
@@ -73,7 +73,6 @@ def make_rain_image():
                                                 (1.0, 0.125490203499794, 0.501960813999176),
                                                 (0.9411764740943909, 0.250980406999588, 1.0),
                                                 (0.501960813999176, 0.125490203499794, 1.0),
-                                                (0.250980406999588, 0.250980406999588, 1.0),
                                                 ]
                                     cmap = mcolors.ListedColormap(cmap_data, 'precipitation')
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)

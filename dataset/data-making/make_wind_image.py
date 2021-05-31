@@ -144,8 +144,8 @@ def make_abs_wind_image():
     try:
         root_folder = '../../../data/one_day_data'
 
-        for year in os.listdir(root_folder):
-            for month in os.listdir(root_folder + f'/{year}'):
+        for year in ['2019']:#os.listdir(root_folder):
+            for month in ['10', '11']:#os.listdir(root_folder + f'/{year}'):
                 for date in os.listdir(root_folder + f'/{year}/{month}'):
                     if len(os.listdir(root_folder + f'/{year}/{month}/{date}')) > 0:
                         data_files = os.listdir(root_folder + f'/{year}/{month}/{date}')
@@ -186,7 +186,7 @@ def make_abs_wind_image():
 
                                     cs = ax.contourf(xi, yi, abs_wind, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation='vertical')
-                                    cbar.set_label('wind speed (/second)')
+                                    cbar.set_label('wind speed (meter/second)')
                                     ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
 
                                     # Save Image and CSV

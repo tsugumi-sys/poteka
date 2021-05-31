@@ -27,7 +27,7 @@ def load_image_data(path: str, img_height=75, img_width=45):
     image = Image.open(path)
     image = image.resize((img_width, img_height))
     image = image.convert('RGB')
-    return np.asarray(image) / 255
+    return np.asarray(image) / 255 #(np.asarray(image) - 128)/128
 
 def datetime_range(start, end, delta):
     current = start
@@ -65,7 +65,7 @@ def load_rainbow_rain_data(img_height=60, img_width=36):
             if os.path.exists(rain_path):
                 rain_file_num = len(os.listdir(rain_path))
                 if rain_file_num == 288:
-                    for step in range(0, len(time_list) - 9, 3):
+                    for step in range(0, len(time_list) - 6, 6):
                         file_names = [f'{dt.hour}-{dt.minute}croped.png' for dt in time_list[step:step+12]]
                         
                         time_subset.append(file_names[6:])
@@ -121,7 +121,7 @@ def load_dense_rain_data(img_height=60, img_width=36):
             if os.path.exists(rain_path):
                 rain_file_num = len(os.listdir(rain_path))
                 if rain_file_num == 288:
-                    for step in range(0, len(time_list) - 9, 3):
+                    for step in range(0, len(time_list) - 6, 6):
                         file_names = [f'{dt.hour}-{dt.minute}croped.png' for dt in time_list[step:step+12]]
                         time_subset.append(file_names[6:])
                         

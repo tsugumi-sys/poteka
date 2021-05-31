@@ -22,7 +22,7 @@ def send_line(msg):
     res = requests.post(line_notify_endpoint, headers, data)
     return res.status_code
 
-def create_model(img_height=60, img_width=36):
+def create_model(img_height=60, img_width=36, model_type='default'):
     model = keras.Sequential([
         layers.Input(
             shape=(None, img_height, img_width, 3)
@@ -40,32 +40,33 @@ def create_model(img_height=60, img_width=36):
         ),
         layers.BatchNormalization(),
         layers.Conv3D(
-            filters=3, kernel_size=(3, 3, 3), padding='same', activation='sigmoid'
+            filters=3, kernel_size=(3, 3, 3), padding='same', activation='relu'
         )
     ])
 
     model.compile(
         optimizer='adadelta',
-        loss='binary_crossentropy',
-        metrics=['mae', metrics.RootMeanSquaredError()]
+        loss='mse',
+        metrics=['mse']
     )
     model.summary()
     return model
 
+
 # Train with Image: rainbow colored
-def train_rainbow_image_model(model_name='model1'):
+def train_rainbow_image_model(model_name='model5'):
     print('-' * 80)
     print('This is training with dense colored images.')
     print('-'*80)
     X, y, data_config = load_data()
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=11)
 
     early_stopping = callbacks.EarlyStopping(
-        min_delta= 0.000001,
+        min_delta= 0.0001,
         patience= 20,
         restore_best_weights=True
     )
-    model = create_model()
+    model = create_model(model_type='with_maxpooling')
     history = model.fit(
         X_train, y_train,
         validation_data=(X_valid, y_valid),
@@ -85,15 +86,15 @@ def train_rainbow_image_model(model_name='model1'):
     print('Model Successfully Saved')
 
 # Train with Image: dense coloered
-def train_dense_image_model(model_name='model2'):
+def train_dense_image_model(model_name='model6'):
     print('-' * 80)
     print('This is training with dense colored images.')
     print('-'*80)
     X, y, data_config = load_dense_rain_data()
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=11)
 
     early_stopping = callbacks.EarlyStopping(
-        min_delta= 0.000001,
+        min_delta= 0.0001,
         patience= 20,
         restore_best_weights=True
     )
@@ -119,7 +120,7 @@ def train_dense_image_model(model_name='model2'):
 
 if __name__ == '__main__':
     try:
-        train_rainbow_image_model()
+        #train_rainbow_image_model()
         train_dense_image_model()
         send_line('Successfully Completed')
     except:

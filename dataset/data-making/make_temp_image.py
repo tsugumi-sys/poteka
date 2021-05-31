@@ -33,8 +33,8 @@ def make_temp_image():
     try:
         root_folder = '../../../data/one_day_data'
 
-        for year in os.listdir(root_folder):
-            for month in os.listdir(root_folder + f'/{year}'):
+        for year in ['2019']:#os.listdir(root_folder):
+            for month in ['10', '11']:#os.listdir(root_folder + f'/{year}'):
                 for date in os.listdir(root_folder + f'/{year}/{month}'):
                     if len(os.listdir(root_folder + f'/{year}/{month}/{date}')) > 0:
                         data_files = os.listdir(root_folder + f'/{year}/{month}/{date}')
@@ -68,7 +68,7 @@ def make_temp_image():
 
 
                                     clevs = [i for i in range(10, 46, 1)]
-                                    print(clevs)
+                                    
                                     cmap = cm.rainbow
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 

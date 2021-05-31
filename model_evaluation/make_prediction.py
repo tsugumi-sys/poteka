@@ -55,7 +55,11 @@ def make_prediction(model_name='model1'):
                         for j in range(50):
                             rain_arr[i, j] = preds[data_count][time_count][i, j, 0]
 
-                    #rain_arr = rescale_arr(0, 150, rain_arr)
+                    rain_arr = np.where(rain_arr > 1, 1, rain_arr)
+                    rain_arr = np.where(rain_arr < 0, 0, rain_arr)
+                    rain_arr = rescale_arr(0, 150, rain_arr)
+                    print(rain_arr.max(), rain_arr.min())
+                   
                     save_csv(rain_arr, path + time)
 
                     time_count += 1
@@ -66,7 +70,7 @@ def make_prediction(model_name='model1'):
 # image trained model
 def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
     # Background Image
-    bg = Image.open('bg.png').convert('RGBA')
+    bg = Image.open('bg_rainbow.png').convert('RGBA')
     img_clear = Image.new('RGBA', bg.size, (255, 255, 255, 0))
 
     print('-' * 80)
@@ -92,7 +96,7 @@ def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
             for time_list in time_lists[count]:
                 time_count = 0
                 for time in time_list:
-                    path = '../../data/prediction_image/train_with_image/30min_'
+                    path = '../../data/prediction_image/train_with_image/60min_'
                     for item in [model_name, year, month, date]:
                         path += f'{item}/'
                         if not os.path.exists(path):
@@ -100,9 +104,18 @@ def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
                     print(preds[data_count][time_count].max(), preds[data_count][time_count].min(), preds[data_count][time_count].shape)
                     img_arr = preds[data_count][time_count]
                     print(img_arr.max(), img_arr.min())
+
+                    # If img_arr scale is [-1, 1]
+                    # img_arr = np.where(img_arr > 1, 1, img_arr)
+                    # img_arr = np.where(img_arr < -1, -1, img_arr)
+                    # img_arr = img_arr * 128 + 128
+                    
+                    # If img_arr scale is [0, 1]
                     img_arr = np.where(img_arr > 1, 1, img_arr)
                     img_arr = np.where(img_arr < 0, 0, img_arr)
                     img_arr = img_arr * 255
+
+
                     img_arr = img_arr.astype(np.uint8)
                     img = Image.fromarray(img_arr)
                     img = img.resize((299, 493))
@@ -123,5 +136,6 @@ def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
 
 
 if __name__ == '__main__':
-    make_image_trained_prediction(model_name='model1', img_color='rainbow')
-    make_image_trained_prediction(model_name='model2', img_color='dense')
+    make_image_trained_prediction(model_name='model5', img_color='rainbow')
+    make_image_trained_prediction(model_name='model6', img_color='dense')
+    #make_prediction(model_name="model1")

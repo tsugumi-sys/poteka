@@ -61,7 +61,7 @@ def load_data():
     label_arr = []
 
     year = 2019
-    monthes = ['11']
+    monthes = ['10', '11']
     dates_list = []
     time_set = []
     for month in monthes:
@@ -72,7 +72,7 @@ def load_data():
             print(date)
             rain_path = f'../../data/rain_image/{year}/{month}/{date}'
             temp_path = f'../../data/temp_image/{year}/{month}/{date}'
-            wind_path = f'../../data/wind_image/{year}/{month}/{date}'
+            wind_path = f'../../data/abs_wind_image/{year}/{month}/{date}'
             time_subset = []
             if os.path.exists(rain_path) and os.path.exists(temp_path) and os.path.exists(wind_path):
                 rain_file_num = len(os.listdir(rain_path))

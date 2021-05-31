@@ -63,8 +63,8 @@ def make_prediction_image(model_name='model1'):
     root_path = f'../../data/prediction_image/{model_name}'
     for year in os.listdir(root_path):
         for month in os.listdir(root_path + f'/{year}'):
-            for date in os.listdir(root_path + f'{year}/{month}'):
-                path = root_path + f'{year}/{month}/{date}/'
+            for date in os.listdir(root_path + f'/{year}/{month}'):
+                path = root_path + f'/{year}/{month}/{date}/'
                 csv_files = [file_name for file_name in os.listdir(path) if '.csv' in file_name]
                 print(csv_files)
                 for file_name in csv_files:
@@ -72,4 +72,4 @@ def make_prediction_image(model_name='model1'):
                         make_rain_image(path + file_name)
 
 if __name__ == '__main__':
-    make_image()
+    make_prediction_image()
