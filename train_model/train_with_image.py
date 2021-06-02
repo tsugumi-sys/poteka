@@ -46,8 +46,8 @@ def create_model(img_height=60, img_width=36, model_type='default'):
 
     model.compile(
         optimizer='adadelta',
-        loss='mse',
-        metrics=['mse']
+        loss='rmse',
+        metrics=['rmse']
     )
     model.summary()
     return model
@@ -120,7 +120,7 @@ def train_dense_image_model(model_name='model6'):
 
 if __name__ == '__main__':
     try:
-        #train_rainbow_image_model()
+        train_rainbow_image_model()
         train_dense_image_model()
         send_line('Successfully Completed')
     except:
