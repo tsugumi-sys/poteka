@@ -10,6 +10,13 @@ from PIL import Image
 from load_data import load_data
 from load_image_data import load_rainbow_rain_data, load_dense_rain_data
 
+import sys
+from pathlib import Path
+PACKAGE_PARENT = '..'
+SCRIPT_DIR = os.path.dirname(os.path.realpath(os.path.join(os.getcwd(), os.path.expanduser(__file__))))
+sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
+from train_model.Models.DLWP.util import custom_load_model
+
 def rescale_arr(min_value, max_value, arr):
     return (max_value - min_value) * arr + min_value
 
@@ -68,7 +75,7 @@ def make_prediction(model_name='model1'):
         count += 1
 
 # image trained model
-def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
+def make_image_trained_prediction(model_name='model1', img_color='rainbow', model_type='default'):
     # Background Image
     bg = Image.open('bg_rainbow.png').convert('RGBA')
     img_clear = Image.new('RGBA', bg.size, (255, 255, 255, 0))
@@ -76,34 +83,45 @@ def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
     print('-' * 80)
     print(f'This is making prediction of {img_color} colored images.')
     print('-'*80)
-    model = load_model(f'../../model/train_with_image/{model_name}/model.h5')
+
+    if model_type == 'default':
+        model = load_model(f'../../model/train_with_image/{model_name}/model.h5')
+    elif model_type == 'DLWP':
+        model = custom_load_model(f'../../model/train_with_image/{model_name}/model.h5')
+    
     if img_color == 'rainbow':
         X, y, data_config = load_rainbow_rain_data()
     else:
         X, y, data_config = load_dense_rain_data()
-    preds = model.predict(X)
-    print(preds.shape)
 
     year = data_config['year'] # str
     monthes = data_config['monthes'] # list
     dates = data_config['dates'] # list
     time_lists = data_config['time'] #list
 
+    # Image Size
+    img_height = 60
+    img_width = 36
+
     count = 0
     data_count = 0
+    print(X.shape)
     for month in monthes:
         for date in dates[count]:
             for time_list in time_lists[count]:
                 time_count = 0
+                data = X[data_count].reshape(1, 6, img_height, img_width, 3)
+                
                 for time in time_list:
                     path = '../../data/prediction_image/train_with_image/60min_'
                     for item in [model_name, year, month, date]:
                         path += f'{item}/'
                         if not os.path.exists(path):
                             os.mkdir(path)
-                    print(preds[data_count][time_count].max(), preds[data_count][time_count].min(), preds[data_count][time_count].shape)
-                    img_arr = preds[data_count][time_count]
-                    print(img_arr.max(), img_arr.min())
+                    
+                    #print(preds[data_count][time_count].max(), preds[data_count][time_count].min(), preds[data_count][time_count].shape)
+                    img_arr = model.predict(data)[0][-1]
+                    data = np.append(data[0][1:], [img_arr], axis=0).reshape(1, 6, img_height, img_width, 3)
 
                     # If img_arr scale is [-1, 1]
                     # img_arr = np.where(img_arr > 1, 1, img_arr)
@@ -114,6 +132,7 @@ def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
                     img_arr = np.where(img_arr > 1, 1, img_arr)
                     img_arr = np.where(img_arr < 0, 0, img_arr)
                     img_arr = img_arr * 255
+                    
 
 
                     img_arr = img_arr.astype(np.uint8)
@@ -123,6 +142,9 @@ def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
                     img_clear.paste(img, (118, 77))
                     img_with_bg = Image.alpha_composite(img_clear, bg)
                     img_with_bg.save(path + time.replace('croped', ''))
+                    print(path + time.replace('croped', ''))
+                    print(img_arr.max(), img_arr.min())
+
 
                     time_count += 1
                 data_count += 1
@@ -136,6 +158,6 @@ def make_image_trained_prediction(model_name='model1', img_color='rainbow'):
 
 
 if __name__ == '__main__':
-    make_image_trained_prediction(model_name='model5', img_color='rainbow')
-    make_image_trained_prediction(model_name='model6', img_color='dense')
+    make_image_trained_prediction(model_name='model5', img_color='rainbow', model_type='DLWP')
+    make_image_trained_prediction(model_name='model6', img_color='dense', model_type='DLWP')
     #make_prediction(model_name="model1")

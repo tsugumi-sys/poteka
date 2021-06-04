@@ -1,6 +1,7 @@
 *.ipynb
 *.csv
 *.text
+*.txt
 *.png
 *.h5
 __pycache__

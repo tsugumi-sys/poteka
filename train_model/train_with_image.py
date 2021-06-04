@@ -10,6 +10,7 @@ import tracemalloc
 import traceback
 
 from load_image_data import load_data, load_dense_rain_data
+from Models.DLWP.model import DLWP_ConvLSTM
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
@@ -23,33 +24,37 @@ def send_line(msg):
     return res.status_code
 
 def create_model(img_height=60, img_width=36, model_type='default'):
-    model = keras.Sequential([
-        layers.Input(
-            shape=(None, img_height, img_width, 3)
-        ),
-        layers.ConvLSTM2D(
-            filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
-        ),
-        layers.BatchNormalization(),
-        layers.ConvLSTM2D(
-            filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
-        ),
-        layers.BatchNormalization(),
-        layers.ConvLSTM2D(
-            filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
-        ),
-        layers.BatchNormalization(),
-        layers.Conv3D(
-            filters=3, kernel_size=(3, 3, 3), padding='same', activation='relu'
-        )
-    ])
+    if model_type == 'default':
+        model = keras.Sequential([
+            layers.Input(
+                shape=(None, img_height, img_width, 3)
+            ),
+            layers.ConvLSTM2D(
+                filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
+            ),
+            layers.BatchNormalization(),
+            layers.ConvLSTM2D(
+                filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
+            ),
+            layers.BatchNormalization(),
+            layers.ConvLSTM2D(
+                filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
+            ),
+            layers.BatchNormalization(),
+            layers.Conv3D(
+                filters=3, kernel_size=(3, 3, 3), padding='same', activation='relu'
+            )
+        ])
 
-    model.compile(
-        optimizer='adadelta',
-        loss='rmse',
-        metrics=['rmse']
-    )
-    model.summary()
+        model.compile(
+            optimizer='adam',
+            loss='mse',
+            metrics=['mse']
+        )
+        model.summary()
+    elif model_type == 'DLWP':
+        model = DLWP_ConvLSTM()
+
     return model
 
 
@@ -66,7 +71,8 @@ def train_rainbow_image_model(model_name='model5'):
         patience= 20,
         restore_best_weights=True
     )
-    model = create_model(model_type='with_maxpooling')
+
+    model = create_model(model_type='DLWP')
     history = model.fit(
         X_train, y_train,
         validation_data=(X_valid, y_valid),
@@ -98,7 +104,7 @@ def train_dense_image_model(model_name='model6'):
         patience= 20,
         restore_best_weights=True
     )
-    model = create_model()
+    model = create_model(model_type='DLWP')
     history = model.fit(
         X_train, y_train,
         validation_data=(X_valid, y_valid),
@@ -120,8 +126,8 @@ def train_dense_image_model(model_name='model6'):
 
 if __name__ == '__main__':
     try:
-        train_rainbow_image_model()
-        train_dense_image_model()
+        train_rainbow_image_model(model_name='model5')
+        train_dense_image_model(model_name='model6')
         send_line('Successfully Completed')
     except:
         send_line('Process has Stoped with some Error')
