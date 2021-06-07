@@ -4,13 +4,14 @@ import numpy as np
 import pandas as pd
 from tensorflow import keras
 import tensorflow as tf
-from tensorflow.keras import layers, callbacks, metrics
+from tensorflow.keras import layers, callbacks, metrics, regularizers
 from sklearn.model_selection import train_test_split
 import tracemalloc
 import traceback
 
 from load_image_data import load_data, load_dense_rain_data
 from Models.DLWP.model import DLWP_ConvLSTM
+from Models.Keras_EG.model import Keras_EG
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
@@ -52,9 +53,12 @@ def create_model(img_height=60, img_width=36, model_type='default'):
             metrics=['mse']
         )
         model.summary()
+    
     elif model_type == 'DLWP':
         model = DLWP_ConvLSTM()
 
+    elif model_type == 'KerasEG':
+        model = Keras_EG()
     return model
 
 
@@ -64,15 +68,16 @@ def train_rainbow_image_model(model_name='model5'):
     print('This is training with dense colored images.')
     print('-'*80)
     X, y, data_config = load_data()
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=11)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
 
     early_stopping = callbacks.EarlyStopping(
-        min_delta= 0.0001,
-        patience= 20,
+        #monitor='val_loss',
+        min_delta=0.001,
+        patience= 15,
         restore_best_weights=True
     )
 
-    model = create_model(model_type='DLWP')
+    model = create_model(model_type='KerasEG')
     history = model.fit(
         X_train, y_train,
         validation_data=(X_valid, y_valid),
@@ -97,14 +102,15 @@ def train_dense_image_model(model_name='model6'):
     print('This is training with dense colored images.')
     print('-'*80)
     X, y, data_config = load_dense_rain_data()
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=11)
+    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
 
     early_stopping = callbacks.EarlyStopping(
-        min_delta= 0.0001,
-        patience= 20,
+        # monitor='val_loss',
+        min_delta=0.001,
+        patience= 15,
         restore_best_weights=True
     )
-    model = create_model(model_type='DLWP')
+    model = create_model(model_type='KerasEG')
     history = model.fit(
         X_train, y_train,
         validation_data=(X_valid, y_valid),
