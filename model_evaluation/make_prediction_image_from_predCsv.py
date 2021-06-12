@@ -29,7 +29,7 @@ def make_rain_image(path: str):
     gl.top_labels = False
 
     clevs = [0, 5, 7.5, 10, 15, 20, 30, 40,
-            50, 70, 100, 150]
+            50, 70, 100]
     cmap_data = [(1.0, 1.0, 1.0),
                 (0.3137255012989044, 0.8156862854957581, 0.8156862854957581),
                 (0.0, 1.0, 1.0),
@@ -42,7 +42,6 @@ def make_rain_image(path: str):
                 (1.0, 0.125490203499794, 0.501960813999176),
                 (0.9411764740943909, 0.250980406999588, 1.0),
                 (0.501960813999176, 0.125490203499794, 1.0),
-                (0.250980406999588, 0.250980406999588, 1.0),
                 ]
     cmap = mcolors.ListedColormap(cmap_data, 'precipitation')
     norm = mcolors.BoundaryNorm(clevs, cmap.N)
@@ -60,7 +59,7 @@ def make_rain_image(path: str):
 
 
 def make_prediction_image(model_name='model1'):
-    root_path = f'../../data/prediction_image/{model_name}'
+    root_path = f'../../data/prediction_image/30min_{model_name}'
     for year in os.listdir(root_path):
         for month in os.listdir(root_path + f'/{year}'):
             for date in os.listdir(root_path + f'/{year}/{month}'):
@@ -72,4 +71,5 @@ def make_prediction_image(model_name='model1'):
                         make_rain_image(path + file_name)
 
 if __name__ == '__main__':
-    make_prediction_image()
+    make_prediction_image(model_name='model1')
+    #make_prediction_image(model_name='model3')

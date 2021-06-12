@@ -9,7 +9,9 @@ from sklearn.model_selection import train_test_split
 import tracemalloc
 import traceback
 
-from load_data import load_data, load_rain_data
+from load_data import load_data_RUV, load_rain_data, load_data_RWT
+from Models.DLWP.model import DLWP_ConvLSTM
+from Models.Keras_EG.model import Keras_EG, Modified_Keras_EG
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
@@ -22,39 +24,50 @@ def send_line(msg):
     res = requests.post(line_notify_endpoint, headers, data)
     return res.status_code
 
-def create_model():
-    model = keras.Sequential([
-        layers.Input(
-            shape=(None, 50, 50, 3)
-        ),
-        layers.ConvLSTM2D(
-            filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
-        ),
-        layers.BatchNormalization(),
-        layers.ConvLSTM2D(
-            filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
-        ),
-        layers.BatchNormalization(),
-        layers.ConvLSTM2D(
-            filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
-        ),
-        layers.BatchNormalization(),
-        layers.Conv3D(
-            filters=3, kernel_size=(3, 3, 3), padding='same', activation="sigmoid"
-        )
-    ])
+def create_model(img_height=50, img_width=50, model_type='default'):
+    if model_type == 'default':
+        model = keras.Sequential([
+            layers.Input(
+                shape=(None, img_height, img_width, 3)
+            ),
+            layers.ConvLSTM2D(
+                filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
+            ),
+            layers.BatchNormalization(),
+            layers.ConvLSTM2D(
+                filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
+            ),
+            layers.BatchNormalization(),
+            layers.ConvLSTM2D(
+                filters=40, kernel_size=(3, 3), padding='same', return_sequences=True,
+            ),
+            layers.BatchNormalization(),
+            layers.Conv3D(
+                filters=3, kernel_size=(3, 3, 3), padding='same', activation='relu'
+            )
+        ])
 
-    model.compile(
-        optimizer='adadelta', # adam
-        loss='binary_crossentropy',
-        metrics=['mae', metrics.RootMeanSquaredError()]
-    )
-    model.summary()
+        model.compile(
+            optimizer='adam',
+            loss='mse',
+            metrics=['mse']
+        )
+        model.summary()
+    
+    elif model_type == 'DLWP':
+        model = DLWP_ConvLSTM()
+
+    elif model_type == 'KerasEG':
+        model = Keras_EG(img_height=50, img_width=50)
+    elif model_type == 'Modefied_Keras_EG':
+        model = Modified_Keras_EG(img_height=50, img_width=50)
+
+    
     return model
 
 # Multi Variable Model
 def train_model(model_name='model1'):
-    X, y = load_data()
+    X, y = load_data_RUV()
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
 
     early_stopping = callbacks.EarlyStopping(
@@ -62,12 +75,12 @@ def train_model(model_name='model1'):
         patience= 20,
         restore_best_weights=True
     )
-    model = create_model()
+    model = create_model(model_type='KerasEG')
     history = model.fit(
         X_train, y_train,
         validation_data=(X_valid, y_valid),
         epochs=500,
-        batch_size=32,
+        batch_size=16,
         callbacks=[early_stopping],
         verbose=1
     )
@@ -87,7 +100,7 @@ def train_rain_model(model_name='model2'):
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
 
     early_stopping = callbacks.EarlyStopping(
-        min_delta= 0.000001,
+        min_delta= 0.01,
         patience= 20,
         restore_best_weights=True
     )
@@ -112,7 +125,7 @@ def train_rain_model(model_name='model2'):
 
 if __name__ == '__main__':
     try:
-        train_model()
+        train_model(model_name='model3')
         send_line('Successfully Completed')
     except:
         send_line('Process has Stoped with some Error')

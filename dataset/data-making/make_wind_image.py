@@ -62,49 +62,51 @@ def make_wind_image():
                                     xi, yi = np.meshgrid(grid_lon, grid_lat)
                                     v_wind = v_wind_rbfi(xi, yi)
                                     u_wind = u_wind_rbfi(xi, yi)
-                                    v_wind = np.where(v_wind > 20, 20, v_wind)
-                                    v_wind = np.where(v_wind < -20, -20, v_wind)
-                                    u_wind = np.where(u_wind > 20, 20, u_wind)
-                                    u_wind = np.where(u_wind < -20, -20, u_wind)
+                                    v_wind = np.where(v_wind > 10, 10, v_wind)
+                                    v_wind = np.where(v_wind < -10, -10, v_wind)
+                                    u_wind = np.where(u_wind > 10, 10, u_wind)
+                                    u_wind = np.where(u_wind < -10, -10, u_wind)
+                                    print(v_wind.max(), v_wind.min())
+                                    print(u_wind.max(), u_wind.min())
                                     
-                                    v_wind_grad = np.array(np.gradient(v_wind)[1])
-                                    u_wind_grad = np.array(np.gradient(u_wind)[0])
-                                    wind_div = np.empty([grid_size, grid_size])
-                                    for i in range(grid_size):
-                                        for j in range(grid_size):
-                                            x_left = i - 1 if i - 1 > 0 else 0
-                                            x_right = i + 1 if i + 1 < grid_size - 1 else grid_size - 1
-                                            y_above = j + 1 if j + 1 < grid_size - 1 else grid_size - 1
-                                            y_bottom = j - 1 if j - 1 > 0 else 0
-                                            val = 0
-                                            for x in range(x_left, x_right + 1):
-                                                for y in range(y_bottom, y_above + 1):
-                                                    val += v_wind_grad[x, y] + u_wind_grad[x, y]
-                                            wind_div[i, j] = val
+                                    # v_wind_grad = np.array(np.gradient(v_wind)[1])
+                                    # u_wind_grad = np.array(np.gradient(u_wind)[0])
+                                    # wind_div = np.empty([grid_size, grid_size])
+                                    # for i in range(grid_size):
+                                    #     for j in range(grid_size):
+                                    #         x_left = i - 1 if i - 1 > 0 else 0
+                                    #         x_right = i + 1 if i + 1 < grid_size - 1 else grid_size - 1
+                                    #         y_above = j + 1 if j + 1 < grid_size - 1 else grid_size - 1
+                                    #         y_bottom = j - 1 if j - 1 > 0 else 0
+                                    #         val = 0
+                                    #         for x in range(x_left, x_right + 1):
+                                    #             for y in range(y_bottom, y_above + 1):
+                                    #                 val += v_wind_grad[x, y] + u_wind_grad[x, y]
+                                    #         wind_div[i, j] = val
                                     
-                                    wind_div = np.where(wind_div > 10, 10, wind_div)
-                                    wind_div = np.where(wind_div < -10, -10, wind_div)
-                                    print(wind_div.max(), wind_div.min())
+                                    # wind_div = np.where(wind_div > 10, 10, wind_div)
+                                    # wind_div = np.where(wind_div < -10, -10, wind_div)
+                                    # print(wind_div.max(), wind_div.min())
 
-                                    # Save Fig
-                                    fig = plt.figure(figsize=(7, 8), dpi=80)
-                                    ax = plt.axes(projection=ccrs.PlateCarree())
-                                    ax.set_extent([120.90, 121.150, 14.350, 14.760])
-                                    ax.add_feature(cfeature.COASTLINE)
-                                    gl = ax.gridlines(draw_labels=True, alpha=0)
-                                    gl.right_labels = False
-                                    gl.top_labels = False
+                                    # # Save Fig
+                                    # fig = plt.figure(figsize=(7, 8), dpi=80)
+                                    # ax = plt.axes(projection=ccrs.PlateCarree())
+                                    # ax.set_extent([120.90, 121.150, 14.350, 14.760])
+                                    # ax.add_feature(cfeature.COASTLINE)
+                                    # gl = ax.gridlines(draw_labels=True, alpha=0)
+                                    # gl.right_labels = False
+                                    # gl.top_labels = False
                                     
-                                    # Colror Bar
-                                    clevs = list(range(-10, 11))
-                                    cmap = cm.coolwarm
-                                    norm = mcolors.BoundaryNorm(clevs, cmap.N)
+                                    # # Colror Bar
+                                    # clevs = list(range(-10, 11))
+                                    # cmap = cm.coolwarm
+                                    # norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(xi, yi, wind_div, clevs, cmap=cmap, norm=norm)
-                                    cbar = plt.colorbar(cs, orientation='vertical')
-                                    cbar.set_label('wind divergence (/second)')
-                                    plt.quiver(xi, yi, u_wind, v_wind)
-                                    ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
+                                    # cs = ax.contourf(xi, yi, wind_div, clevs, cmap=cmap, norm=norm)
+                                    # cbar = plt.colorbar(cs, orientation='vertical')
+                                    # cbar.set_label('wind divergence (/second)')
+                                    # plt.quiver(xi, yi, u_wind, v_wind)
+                                    # ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
 
                                     # Save Image and CSV
                                     save_path = '../../../data/wind_image'
@@ -116,13 +118,16 @@ def make_wind_image():
                                     save_csv_path = save_path + f'/{data_file}'
                                     save_path += '/{}'.format(data_file.replace('.csv', '.png'))
                                     
-                                    plt.savefig(save_path)
+                                    #plt.savefig(save_path)
 
-                                    save_df = pd.DataFrame(wind_div, index=np.flip(grid_lat), columns=grid_lon)
-                                    save_df.to_csv(save_csv_path)
+                                    uwind_df = pd.DataFrame(u_wind, index=np.flip(grid_lat), columns=grid_lon)
+                                    vwind_df = pd.DataFrame(v_wind, index=np.flip(grid_lat), columns=grid_lon)
+                                    uwind_df.to_csv(save_csv_path.replace('.csv', 'U.csv'))
+                                    vwind_df.to_csv(save_csv_path.replace('.csv', 'V.csv'))
+                                    #save_df.to_csv(save_csv_path)
                                     print('Sucessfully Saved')
 
-                                    plt.close()
+                                    #plt.close()
                                 except:
                                     print('!'*10,' Failed ', '!'*10)
                                     failed_path.append(path)
@@ -220,6 +225,6 @@ def make_abs_wind_image():
         print(traceback.format_exc())
         
 if __name__ == '__main__':
-    #make_wind_image()
-    make_abs_wind_image()
+    make_wind_image()
+    #make_abs_wind_image()
                         
