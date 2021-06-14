@@ -81,4 +81,4 @@ def Modified_Keras_EG(img_height=60, img_width=36):
     return model
 
 if __name__ == '__main__':
-    Keras_EG()()
+    Keras_EG()

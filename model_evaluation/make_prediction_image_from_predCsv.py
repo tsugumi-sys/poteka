@@ -58,8 +58,8 @@ def make_rain_image(path: str):
     print('Sucessfully Saved')
 
 
-def make_prediction_image(model_name='model1'):
-    root_path = f'../../data/prediction_image/30min_{model_name}'
+def make_prediction_image(model_name='model1', time_span=60):
+    root_path = f'../../data/prediction_image/{time_span}min_{model_name}'
     for year in os.listdir(root_path):
         for month in os.listdir(root_path + f'/{year}'):
             for date in os.listdir(root_path + f'/{year}/{month}'):
@@ -71,5 +71,5 @@ def make_prediction_image(model_name='model1'):
                         make_rain_image(path + file_name)
 
 if __name__ == '__main__':
-    make_prediction_image(model_name='model1')
+    make_prediction_image(model_name='model2', time_span=60)
     #make_prediction_image(model_name='model3')

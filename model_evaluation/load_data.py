@@ -159,7 +159,7 @@ def load_data_RWT():
             temp_path = f'../../data/temp_image/{year}/{month}/{date}'
             abs_wind_path = f'../../data/abs_wind_image/{year}/{month}/{date}'
             time_subset = []
-            if os.path.exists(rain_path) and os.path.exists(wind_path):
+            if os.path.exists(rain_path) and os.path.exists(temp_path) and os.path.exists(abs_wind_path):
                 rain_file_num = len(os.listdir(rain_path))
                 temp_file_num = len(os.listdir(temp_path))
                 abs_wind_file_num = len(os.listdir(abs_wind_path))

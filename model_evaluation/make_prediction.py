@@ -34,7 +34,7 @@ def make_prediction(model_name='model1', time_span=60):
     print('This is prediction with multi variable trained model')
     print('-'*80)
     model = load_model(f'../../model/{model_name}/model.h5')
-    X, y, data_config = load_data_RUV()
+    X, y, data_config = load_data_RWT()
 
     year = data_config['year'] # str
     monthes = data_config['monthes'] # list
@@ -162,5 +162,5 @@ def make_image_trained_prediction(model_name='model1', img_color='rainbow', mode
 if __name__ == '__main__':
     # make_image_trained_prediction(model_name='model5', img_color='rainbow', model_type='DLWP')
     # make_image_trained_prediction(model_name='model6', img_color='dense', model_type='DLWP')
-    make_prediction(model_name="model1", time_span=60)
+    make_prediction(model_name="model2", time_span=60)
     #make_prediction(model_name="model3")
