@@ -16,8 +16,14 @@ from Models.Keras_EG.model import Keras_EG, Modified_Keras_EG
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
 
+from dotenv import load_dotenv
+from pathlib import Path
+
+dotenv_path = Path('../.env')
+load_dotenv(dotenv_path=dotenv_path)
+
 def send_line(msg):
-    line_notify_token = 'HvPqtdmp53Cl6tZyKMIVkMjmBOWOWGyR6W7FG5Np31y'
+    line_notify_token = os.getenv('LINE_TOKEN')
     line_notify_endpoint = 'https://notify-api.line.me/api/notify'
     headers = {'Authorization': f'Bearer {line_notify_token}'}
     data = {'message': f'message: {msg}'}

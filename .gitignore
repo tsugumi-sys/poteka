@@ -4,5 +4,6 @@
 *.txt
 *.png
 *.h5
+.env
 __pycache__
 .ipynb_checkpoints
