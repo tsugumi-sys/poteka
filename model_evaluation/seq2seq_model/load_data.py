@@ -80,13 +80,13 @@ def load_data_RUV():
 
     for month in monthes:
         log_memory()
-        dates = os.listdir(f'../../data/rain_image/{year}/{month}')
+        dates = os.listdir(f'../../../data/rain_image/{year}/{month}')
         dates_list.append(dates)
 
         for date in dates:
             print(date)
-            rain_path = f'../../data/rain_image/{year}/{month}/{date}'
-            wind_path = f'../../data/wind_image/{year}/{month}/{date}'
+            rain_path = f'../../../data/rain_image/{year}/{month}/{date}'
+            wind_path = f'../../../data/wind_image/{year}/{month}/{date}'
             time_subset = []
             if os.path.exists(rain_path) and os.path.exists(wind_path):
                 rain_file_num = len(os.listdir(rain_path))
@@ -150,14 +150,14 @@ def load_data_RWT():
 
     for month in monthes:
         log_memory()
-        dates = os.listdir(f'../../data/rain_image/{year}/{month}')
+        dates = os.listdir(f'../../../data/rain_image/{year}/{month}')
         dates_list.append(dates)
 
         for date in dates:
             print(date)
-            rain_path = f'../../data/rain_image/{year}/{month}/{date}'
-            temp_path = f'../../data/temp_image/{year}/{month}/{date}'
-            abs_wind_path = f'../../data/abs_wind_image/{year}/{month}/{date}'
+            rain_path = f'../../../data/rain_image/{year}/{month}/{date}'
+            temp_path = f'../../../data/temp_image/{year}/{month}/{date}'
+            abs_wind_path = f'../../../data/abs_wind_image/{year}/{month}/{date}'
             time_subset = []
             if os.path.exists(rain_path) and os.path.exists(temp_path) and os.path.exists(abs_wind_path):
                 rain_file_num = len(os.listdir(rain_path))
@@ -220,12 +220,12 @@ def load_rain_data():
     time_set = []
     for month in monthes:
         log_memory()
-        dates = os.listdir(f'../../data/rain_image/{year}/{month}')
+        dates = os.listdir(f'../../../data/rain_image/{year}/{month}')
         dates_list.append(dates)
         
         for date in dates:
             print(date)
-            rain_path = f'../../data/rain_image/{year}/{month}/{date}'
+            rain_path = f'../../../data/rain_image/{year}/{month}/{date}'
             time_subset = []
             if os.path.exists(rain_path):
                 rain_file_num = len(os.listdir(rain_path))

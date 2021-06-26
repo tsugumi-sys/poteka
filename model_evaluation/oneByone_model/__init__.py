@@ -1,0 +1,4 @@
+# One After Onther model prediction
+#
+# Input: 6 images Sequential
+# Output: 1 image (10 minutes future)

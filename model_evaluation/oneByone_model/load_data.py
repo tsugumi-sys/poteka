@@ -25,14 +25,22 @@ def min_max_scaler(min_value, max_value, arr):
 def rescale_arr(min_value, max_value, arr):
     return (max_value - min_value) * arr + min_value
 
+def rescale_rain_arr_150To100(min_value, max_value, arr):
+    arr = (max_value - min_value) * arr + min_value
+    arr -= 50
+    arr = np.where(arr > 100, 100, arr)
+    arr = np.where(arr < 0, 0, arr)
+    return arr
+
+
 
 # return: ndarray
 def load_csv_data(path: str):
     df = pd.read_csv(path, index_col=0)
     if 'rain' in path:
-        df = df + 50
-        # Scale [0, 100]
-        return min_max_scaler(0, 150, df.values)
+        #df = df + 50
+        # Scale [0, 150]
+        return min_max_scaler(0, 100, df.values)
         
     elif 'temp' in path:
         # Scale [10, 45]
@@ -44,7 +52,6 @@ def load_csv_data(path: str):
         
     elif 'wind' in path:
         # Scale [-10, 10]
-        # abs_wind [0, 30]
         return min_max_scaler(-10, 10, df.values)
 
 def datetime_range(start, end, delta):
@@ -58,7 +65,7 @@ def create_time_list(year=2020, month=1, date=1):
     return dts
 
 
-def load_data_RUV(): # Rain U-Wind V-Wind
+def load_data_RUV():
     tracemalloc.start()
 
     time_list = create_time_list()
@@ -66,21 +73,28 @@ def load_data_RUV(): # Rain U-Wind V-Wind
     input_arr = []
     label_arr = []
 
-    year = 2020
-    monthes = ['04', '05', '06', '07', '08', '09', '10']
+    year = 2019
+    monthes = ['10', '11']
+    dates_list = []
+    time_set = []
+
     for month in monthes:
         log_memory()
-        dates = os.listdir(f'../../data/rain_image/{year}/{month}')
+        dates = os.listdir(f'../../../data/rain_image/{year}/{month}')
+        dates_list.append(dates)
+
         for date in dates:
             print(date)
-            rain_path = f'../../data/rain_image/{year}/{month}/{date}'
-            wind_path = f'../../data/wind_image/{year}/{month}/{date}'
+            rain_path = f'../../../data/rain_image/{year}/{month}/{date}'
+            wind_path = f'../../../data/wind_image/{year}/{month}/{date}'
+            time_subset = []
             if os.path.exists(rain_path) and os.path.exists(wind_path):
                 rain_file_num = len(os.listdir(rain_path))
                 wind_file_num = len(os.listdir(wind_path))
-                if rain_file_num + wind_file_num == 288 * 3:
-                    for step in range(0, len(time_list) - 9, 3):
+                if rain_file_num  == 288:
+                    for step in range(0, len(time_list) - 6, 6):
                         file_names = [f'{dt.hour}-{dt.minute}.csv' for dt in time_list[step:step+12]]
+                        time_subset.append(file_names[6:])
                         
                         subset_arrs = []
                         for file_name in file_names:
@@ -107,13 +121,21 @@ def load_data_RUV(): # Rain U-Wind V-Wind
                         
                         input_arr.append(subset_arrs[:6])
                         label_arr.append(subset_arrs[6:])
+        time_set.append(time_subset)
 
     input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, 3])
     label_arr = np.array(label_arr).reshape([len(label_arr), 6, 50, 50, 3])
 
-    return input_arr, label_arr
+    data_config = {
+        'year': year,
+        'monthes': monthes,
+        'dates': dates_list,
+        'time': time_set
+    }
 
-def load_data_RWT(): # Rain Absolute Wind Temperature
+    return input_arr, label_arr, data_config
+
+def load_data_RWT():
     tracemalloc.start()
 
     time_list = create_time_list()
@@ -121,26 +143,34 @@ def load_data_RWT(): # Rain Absolute Wind Temperature
     input_arr = []
     label_arr = []
 
-    year = 2020
-    monthes = ['04', '05', '06', '07', '08', '09', '10']
+    year = 2019
+    monthes = ['10', '11']
+    dates_list = []
+    time_set = []
+
     for month in monthes:
         log_memory()
-        dates = os.listdir(f'../../data/rain_image/{year}/{month}')
+        dates = os.listdir(f'../../../data/rain_image/{year}/{month}')
+        dates_list.append(dates)
+
         for date in dates:
             print(date)
-            rain_path = f'../../data/rain_image/{year}/{month}/{date}'
-            temp_path = f'../../data/temp_image/{year}/{month}/{date}'
-            abs_wind_path = f'../../data/abs_wind_image/{year}/{month}/{date}'
-            if os.path.exists(rain_path) and os.path.exists(abs_wind_path) and os.path.exists(temp_path):
+            rain_path = f'../../../data/rain_image/{year}/{month}/{date}'
+            temp_path = f'../../../data/temp_image/{year}/{month}/{date}'
+            abs_wind_path = f'../../../data/abs_wind_image/{year}/{month}/{date}'
+            time_subset = []
+            if os.path.exists(rain_path) and os.path.exists(temp_path) and os.path.exists(abs_wind_path):
                 rain_file_num = len(os.listdir(rain_path))
                 temp_file_num = len(os.listdir(temp_path))
                 abs_wind_file_num = len(os.listdir(abs_wind_path))
-                if rain_file_num == 288:
-                    for step in range(0, len(time_list) - 9, 3):
+                if rain_file_num  == 288:
+                    for step in range(0, len(time_list) - 6, 6):
                         file_names = [f'{dt.hour}-{dt.minute}.csv' for dt in time_list[step:step+12]]
+                        time_subset.append(file_names[6:])
                         
                         subset_arrs = []
                         for file_name in file_names:
+                            # Load data
                             # Load data
                             rain_file_path = rain_path + f'/{file_name}'
                             temp_file_path = temp_path + f'/{file_name}'
@@ -150,9 +180,6 @@ def load_data_RWT(): # Rain Absolute Wind Temperature
                             rain_arr = load_csv_data(rain_file_path)
                             temp_arr = load_csv_data(temp_file_path)
                             abs_wind_arr = load_csv_data(abs_wind_file_path)
-                            
-                            #print('Absolute Wind Data', abs_wind_arr.max(), abs_wind_arr.min())
-                            
                             subset_arr = np.empty([50, 50, 3])
                             for i in range(50):
                                 for j in range(50):
@@ -164,11 +191,19 @@ def load_data_RWT(): # Rain Absolute Wind Temperature
                         
                         input_arr.append(subset_arrs[:6])
                         label_arr.append(subset_arrs[6:])
+        time_set.append(time_subset)
 
     input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, 3])
     label_arr = np.array(label_arr).reshape([len(label_arr), 6, 50, 50, 3])
 
-    return input_arr, label_arr
+    data_config = {
+        'year': year,
+        'monthes': monthes,
+        'dates': dates_list,
+        'time': time_set
+    }
+
+    return input_arr, label_arr, data_config
 
 
 def load_rain_data():
@@ -179,19 +214,25 @@ def load_rain_data():
     input_arr = []
     label_arr = []
 
-    year = 2020
-    monthes = ['04', '05', '06', '07', '08', '09', '10']
+    year = 2019
+    monthes = ['11']
+    dates_list = []
+    time_set = []
     for month in monthes:
         log_memory()
-        dates = os.listdir(f'../../data/rain_image/{year}/{month}')
+        dates = os.listdir(f'../../../data/rain_image/{year}/{month}')
+        dates_list.append(dates)
+        
         for date in dates:
             print(date)
-            rain_path = f'../../data/rain_image/{year}/{month}/{date}'
+            rain_path = f'../../../data/rain_image/{year}/{month}/{date}'
+            time_subset = []
             if os.path.exists(rain_path):
                 rain_file_num = len(os.listdir(rain_path))
                 if rain_file_num == 288:
-                    for step in range(0, len(time_list) - 9, 3):
+                    for step in range(0, len(time_list) - 6, 6):
                         file_names = [f'{dt.hour}-{dt.minute}.csv' for dt in time_list[step:step+12]]
+                        time_subset.append(file_names[6:])
                         
                         subset_arrs = []
                         for file_name in file_names:
@@ -211,12 +252,22 @@ def load_rain_data():
                         
                         input_arr.append(subset_arrs[:6])
                         label_arr.append(subset_arrs[6:])
+            time_set.append(time_subset)
 
     input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, 3])
     label_arr = np.array(label_arr).reshape([len(label_arr), 6, 50, 50, 3])
 
-    return input_arr, label_arr
+    data_config = {
+        'year': year,
+        'monthes': monthes,
+        'dates': dates_list,
+        'time': time_set
+    }
+
+    return input_arr, label_arr, data_config
+
 
 if __name__ == '__main__':
-    input_arr, label_arr = load_data()
+    input_arr, label_arr, data_config = load_data()
     print(input_arr.shape, label_arr.shape)
+    print(data_config)

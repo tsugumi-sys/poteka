@@ -1,7 +1,0 @@
-Train with image Model: 
-model name | image_color | optimizer | loss function | activation of output layer | input range
-===============================================================================================
-model1 | rainbow | adadelta | binary_crossentropy | sigmoid | [0, 1]
-model2 | dense | adadelta | binary_crossentropy | sigmoid | [0, 1]
-model3 | rainbow | rmsprop | mae | sigmoid | [0, 1]
-model4 | dense | rmsprop | mae | sigmoid | [0, 1]
