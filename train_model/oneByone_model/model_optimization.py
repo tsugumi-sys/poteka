@@ -36,15 +36,15 @@ def send_line(msg):
     res = requests.post(line_notify_endpoint, headers, data)
     return res.status_code
 
-def create_model(params):
+def create_model(trial):
     # Input Shape Pramameters
     HEIGHT = 50
     WIDTH = 50
 
     # Parameters
-    filters = params['filters']
-    adam_learning_rate = params['adam_learning_rate']
-    kernel_regularizer = params['kernel_regularizer']
+    filters = trial.suggest_categorical("filters", [16, 32, 64])
+    adam_learning_rate = trial.suggest_categorical("adam_learning_rate", [1e-5, 1e-4, 1e-3, 1e-2, 1e-1])
+    kernel_regularizer = trial.suggest_categorical("kernel_regularizer", [1e-5, 1e-4, 1e-3, 1e-2, 1e-1])
 
 
     # Kernel regularizer make prediction worse...
@@ -93,22 +93,18 @@ def create_model(params):
     return model
 
 # Multi Variable Model
-def main():
-    model_name = 'ruv_model'
-    params = {
-        'filters': 64,
-        'adam_learning_rate': 1e-05,
-        'kernel_regularizer': 0.1
-    }
+def objective(trial):
+    #model_name = 'ruv_model'
     keras.backend.clear_session()
 
-    mlflow.set_experiment('OneByOne_ConvLSTM')
+    mlflow.set_experiment('OneByOne_ConvLSTM_Opuna')
     mlflow.tensorflow.autolog(every_n_iter=1)
-    with mlflow.start_run(run_name=model_name):
+    with mlflow.start_run():
         X, y = load_data_RUV()
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
-        model = create_model(params)
-        mlflow.log_params(params)
+        model = create_model(trial)
+
+        mlflow.log_params(trial.params)
 
         early_stopping = callbacks.EarlyStopping(
             min_delta= 0.001,
@@ -125,48 +121,23 @@ def main():
         )
 
         score = model.evaluate(X_valid, y_valid, verbose=0)
+    return score[1]
 
-    save_path = f'../../../model/oneByone_model/{model_name}/'
-    if not os.path.exists(save_path):
-        os.mkdir(save_path)
-
-    hist = pd.DataFrame(history.history)
-    hist.to_csv(save_path + 'history.csv')
-    model.save(save_path + 'model.h5')
-    print('Model Successfully Saved')
-
-# Only Rain Model
-def train_rain_model(model_name='model2'):
-    X, y = load_rain_data()
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
-
-    early_stopping = callbacks.EarlyStopping(
-        min_delta= 0.01,
-        patience= 20,
-        restore_best_weights=True
-    )
-    model = create_model()
-    history = model.fit(
-        X_train, y_train,
-        validation_data=(X_valid, y_valid),
-        epochs=500,
-        batch_size=32,
-        callbacks=[early_stopping],
-        verbose=1
-    )
-
-    save_path = f'../../../model/oneByone_model/{model_name}/'
-    if not os.path.exists(save_path):
-        os.mkdir(save_path)
-
-    hist = pd.DataFrame(history.history)
-    hist.to_csv(save_path + 'history.csv')
-    model.save(save_path + 'model.h5')
-    print('Model Successfully Saved')
 
 if __name__ == '__main__':
     try:
-        main()
+        study = optuna.create_study(direction="maximize")
+        study.optimize(objective, n_trials=100)
+
+        print("Number of finished trials", len(study.trials))
+        print('Best Trials: ')
+        trial = study.best_trial
+
+        print(" Value: ", trial.value)
+        print(" Params: ")
+        for key, value in trial.params.items():
+            print("  {}: {}".format(key, value))
+
         send_line('Successfully Completed')
     except:
         send_line('Process has Stoped with some Error')
