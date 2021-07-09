@@ -30,9 +30,9 @@ def rescale_arr(min_value, max_value, arr):
 def load_csv_data(path: str):
     df = pd.read_csv(path, index_col=0)
     if 'rain' in path:
-        df = df + 50
+        #df = df + 50
         # Scale [0, 100]
-        return min_max_scaler(0, 150, df.values)
+        return min_max_scaler(0, 100, df.values)
         
     elif 'temp' in path:
         # Scale [10, 45]
@@ -44,7 +44,6 @@ def load_csv_data(path: str):
         
     elif 'wind' in path:
         # Scale [-10, 10]
-        # abs_wind [0, 30]
         return min_max_scaler(-10, 10, df.values)
 
 def datetime_range(start, end, delta):
@@ -107,6 +106,12 @@ def load_data_RUV(): # Rain U-Wind V-Wind
                         
                         input_arr.append(subset_arrs[:6])
                         label_arr.append(subset_arrs[6])
+                        # l_arr = np.empty([50, 50])
+                        
+                        # for i in range(50):
+                        #     for j in range(50):
+                        #         l_arr[i, j] = subset_arrs[6][i, j, 0]
+                        # label_arr.append(l_arr)
 
     input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, 3])
     label_arr = np.array(label_arr).reshape([len(label_arr), 50, 50, 3])

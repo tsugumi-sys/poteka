@@ -30,9 +30,9 @@ def rescale_arr(min_value, max_value, arr):
 def load_csv_data(path: str):
     df = pd.read_csv(path, index_col=0)
     if 'rain' in path:
-        df = df + 50
+        #df = df + 50
         # Scale [0, 100]
-        return min_max_scaler(0, 150, df.values)
+        return min_max_scaler(0, 100, df.values)
         
     elif 'temp' in path:
         # Scale [10, 45]
@@ -106,10 +106,17 @@ def load_data_RUV(): # Rain U-Wind V-Wind
                             subset_arrs.append(subset_arr)
                         
                         input_arr.append(subset_arrs[:6])
-                        label_arr.append(subset_arrs[6:])
+                        label_arrs = []
+                        for i in range(6):
+                            arr = np.empty([50, 50])
+                            for j in range(50):
+                                for k in range(50):
+                                    arr[j, k] = subset_arrs[6:][i][j, k, 0]
+                            label_arrs.append(arr)
+                        label_arr.append(label_arrs)
 
     input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, 3])
-    label_arr = np.array(label_arr).reshape([len(label_arr), 6, 50, 50, 3])
+    label_arr = np.array(label_arr).reshape([len(label_arr), 6, 50, 50, 1])
 
     return input_arr, label_arr
 

@@ -42,9 +42,9 @@ def create_model(trial):
     WIDTH = 50
 
     # Parameters
-    filters = trial.suggest_categorical("filters", [16, 32, 64])
-    adam_learning_rate = trial.suggest_categorical("adam_learning_rate", [1e-5, 1e-4, 1e-3, 1e-2, 1e-1])
-    kernel_regularizer = trial.suggest_categorical("kernel_regularizer", [1e-5, 1e-4, 1e-3, 1e-2, 1e-1])
+    filters = trial.suggest_int("filters", 16, 64)
+    adam_learning_rate = trial.suggest_loguniform("adam_learning_rate", 1e-5, 1e-1)
+    activation = "relu"
 
 
     # Kernel regularizer make prediction worse...
@@ -55,8 +55,7 @@ def create_model(trial):
         kernel_size=(5, 5),
         padding='same',
         return_sequences=True,
-        activation='relu',
-        kernel_regularizer=regularizers.l2(kernel_regularizer)
+        activation=activation,
     )(inp)
     x = layers.BatchNormalization()(x)
     x = layers.ConvLSTM2D(
@@ -64,8 +63,7 @@ def create_model(trial):
         kernel_size=(3, 3),
         padding='same',
         return_sequences=True,
-        activation='relu',
-        kernel_regularizer=regularizers.l2(kernel_regularizer)
+        activation=activation,
     )(x)
     x = layers.BatchNormalization()(x)
     x = layers.ConvLSTM2D(
@@ -73,8 +71,7 @@ def create_model(trial):
         kernel_size=(3, 3),
         padding='same',
         return_sequences=True,
-        activation='relu',
-        kernel_regularizer=regularizers.l2(kernel_regularizer)
+        activation=activation,
     )(x)
     x = layers.BatchNormalization()(x)
     x = layers.ConvLSTM2D(
@@ -97,11 +94,12 @@ def objective(trial):
     #model_name = 'ruv_model'
     keras.backend.clear_session()
 
-    mlflow.set_experiment('OneByOne_ConvLSTM_Opuna')
+    mlflow.set_experiment('Optuna_ConvLSTM')
     mlflow.tensorflow.autolog(every_n_iter=1)
     with mlflow.start_run():
-        X, y = load_data_RUV()
-        X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
+        # X, y = load_data_RUV()
+        # X_train, X_valid, y_train, y_valid = train_test_split(X.copy(), y.copy(), test_size=0.2, random_state=11)
+        
         model = create_model(trial)
 
         mlflow.log_params(trial.params)
@@ -111,6 +109,7 @@ def objective(trial):
             patience= 20,
             restore_best_weights=True
         )
+        
         history = model.fit(
             X_train, y_train,
             validation_data=(X_valid, y_valid),
@@ -126,8 +125,10 @@ def objective(trial):
 
 if __name__ == '__main__':
     try:
-        study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=100)
+        X, y = load_data_RUV()
+        X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
+        study = optuna.create_study(direction="minimize")
+        study.optimize(objective, n_trials=100, gc_after_trial=True)
 
         print("Number of finished trials", len(study.trials))
         print('Best Trials: ')

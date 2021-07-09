@@ -17,6 +17,20 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(os.path.join(os.getcwd(), os.path.
 sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 from train_model.Models.DLWP.util import custom_load_model
 
+from dotenv import load_dotenv
+from pathlib import Path
+
+dotenv_path = Path('../../.env')
+load_dotenv(dotenv_path=dotenv_path)
+
+def send_line(msg):
+    line_notify_token = os.getenv('LINE_TOKEN')
+    line_notify_endpoint = 'https://notify-api.line.me/api/notify'
+    headers = {'Authorization': f'Bearer {line_notify_token}'}
+    data = {'message': f'message: {msg}'}
+    res = requests.post(line_notify_endpoint, headers, data)
+    return res.status_code
+
 def rescale_arr(min_value, max_value, arr):
     return (max_value - min_value) * arr + min_value
 
@@ -34,7 +48,7 @@ def make_prediction(model_name='model1', time_span=60):
     print('This is prediction with multi variable trained model')
     print('-'*80)
     model = load_model(f'../../../model/seq2seq_model/{model_name}/model.h5')
-    X, y, data_config = load_data_RWT()
+    X, y, data_config = load_data_RUV()
 
     year = data_config['year'] # str
     monthes = data_config['monthes'] # list
@@ -165,4 +179,4 @@ def make_prediction(model_name='model1', time_span=60):
 
 
 if __name__ == '__main__':
-    make_prediction(model_name="model1", time_span=60)
+    make_prediction(model_name="ruv_model_baseline", time_span=60)

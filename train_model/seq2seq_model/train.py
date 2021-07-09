@@ -44,7 +44,7 @@ def create_model(params):
     # Parameters
     filters = params['filters']
     adam_learning_rate = params['adam_learning_rate']
-    kernel_regularizer = params.kernel['regularizer']
+    #kernel_regularizer = params['kernel_regularizer']
 
 
     # Kernel regularizer make prediction worse...
@@ -55,8 +55,8 @@ def create_model(params):
         kernel_size=(5, 5),
         padding='same',
         return_sequences=True,
-        activation='relu',
-        kernel_regularizer=regularizers.l2(kernel_regularizer)
+        # activation='relu',
+        # kernel_regularizer=regularizers.l2(kernel_regularizer)
     )(inp)
     x = layers.BatchNormalization()(x)
     x = layers.ConvLSTM2D(
@@ -64,8 +64,8 @@ def create_model(params):
         kernel_size=(3, 3),
         padding='same',
         return_sequences=True,
-        activation='relu',
-        kernel_regularizer=regularizers.l2(kernel_regularizer)
+        # activation='relu',
+        # kernel_regularizer=regularizers.l2(kernel_regularizer)
     )(x)
     x = layers.BatchNormalization()(x)
     x = layers.ConvLSTM2D(
@@ -73,15 +73,14 @@ def create_model(params):
         kernel_size=(3, 3),
         padding='same',
         return_sequences=True,
-        activation='relu',
-        kernel_regularizer=regularizers.l2(kernel_regularizer)
+        # activation='relu',
+        # kernel_regularizer=regularizers.l2(kernel_regularizer)
     )(x)
     x = layers.BatchNormalization()(x)
     x = layers.Conv3D(
-        filters=3,
-        kernel_size=3,
+        filters=1,
+        kernel_size=(3, 3, 3),
         padding='same',
-        return_sequences=False,
         activation='sigmoid'
     )(x)
 
@@ -94,11 +93,11 @@ def create_model(params):
 
 # Multi Variable Model
 def main():
-    model_name = 'ruv_model'
+    model_name = 'ruv_model_baseline'
     params = {
         'filters': 64,
-        'adam_learning_rate': 1e-05,
-        'kernel_regularizer': 0.1
+        'adam_learning_rate': 0.001,
+        #'kernel_regularizer': 0.001
     }
     keras.backend.clear_session()
 

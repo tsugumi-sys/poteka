@@ -44,7 +44,7 @@ def create_model(trial):
     # Parameters
     filters = trial.suggest_categorical("filters", [16, 32, 64])
     adam_learning_rate = trial.suggest_categorical("adam_learning_rate", [1e-5, 1e-4, 1e-3, 1e-2, 1e-1])
-    kernel_regularizer = trial.suggest_categorical("kernel_regularizer", [1e-5, 1e-4, 1e-3, 1e-2, 1e-1])
+    # kernel_regularizer = trial.suggest_categorical("kernel_regularizer", [1e-5, 1e-4, 1e-3, 1e-2, 1e-1])
 
 
     # Kernel regularizer make prediction worse...
@@ -55,8 +55,8 @@ def create_model(trial):
         kernel_size=(5, 5),
         padding='same',
         return_sequences=True,
-        activation='relu',
-        kernel_regularizer=regularizers.l2(kernel_regularizer)
+        # activation='relu',
+        # kernel_regularizer=regularizers.l2(kernel_regularizer)
     )(inp)
     x = layers.BatchNormalization()(x)
     x = layers.ConvLSTM2D(
@@ -64,8 +64,8 @@ def create_model(trial):
         kernel_size=(3, 3),
         padding='same',
         return_sequences=True,
-        activation='relu',
-        kernel_regularizer=regularizers.l2(kernel_regularizer)
+        # activation='relu',
+        # kernel_regularizer=regularizers.l2(kernel_regularizer)
     )(x)
     x = layers.BatchNormalization()(x)
     x = layers.ConvLSTM2D(
@@ -73,15 +73,14 @@ def create_model(trial):
         kernel_size=(3, 3),
         padding='same',
         return_sequences=True,
-        activation='relu',
-        kernel_regularizer=regularizers.l2(kernel_regularizer)
+        # activation='relu',
+        # kernel_regularizer=regularizers.l2(kernel_regularizer)
     )(x)
     x = layers.BatchNormalization()(x)
     x = layers.Conv3D(
-        filters=3,
-        kernel_size=3,
+        filters=1,
+        kernel_size=(3, 3, 3),
         padding='same',
-        return_sequences=False,
         activation='sigmoid'
     )(x)
 
@@ -97,7 +96,7 @@ def objective(trial):
     #model_name = 'ruv_model'
     keras.backend.clear_session()
 
-    mlflow.set_experiment('Seq2Seq_ConvLSTM_Opuna')
+    mlflow.set_experiment('Optuna_Seq2Seq_ConvLSTM')
     mlflow.tensorflow.autolog(every_n_iter=1)
     with mlflow.start_run():
         X, y = load_data_RUV()
@@ -126,7 +125,7 @@ def objective(trial):
 if __name__ == '__main__':
     try:
         study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=100)
+        study.optimize(objective, n_trials=100, gc_after_trial=True)
 
         print("Number of finished trials", len(study.trials))
         print('Best Trials: ')
