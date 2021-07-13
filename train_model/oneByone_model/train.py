@@ -90,16 +90,19 @@ def create_model(params):
 
 # Multi Variable Model
 def main():
-    model_name = 'ruv_model_baseline_relu'
+    model_name = 'ruv_model_optuned_relu'
     params = {
-        'filters': 64,
-        'adam_learning_rate': 0.001,
+        'filters': 41,
+        'adam_learning_rate': 3.275e-05,
         'activation': 'relu'
     }
     keras.backend.clear_session()
 
     mlflow.set_experiment('ConvLSTM')
     mlflow.tensorflow.autolog(every_n_iter=1)
+    print('-'*60)
+    print(model_name)
+    print('-'*60)
     with mlflow.start_run(run_name=model_name):
         X, y = load_data_RUV()
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)

@@ -44,10 +44,7 @@ def create_model(params):
     # Parameters
     filters = params['filters']
     adam_learning_rate = params['adam_learning_rate']
-    #kernel_regularizer = params['kernel_regularizer']
 
-
-    # Kernel regularizer make prediction worse...
     
     inp = layers.Input(shape=(None, HEIGHT, WIDTH, 3))
     x = layers.ConvLSTM2D(
@@ -55,8 +52,7 @@ def create_model(params):
         kernel_size=(5, 5),
         padding='same',
         return_sequences=True,
-        # activation='relu',
-        # kernel_regularizer=regularizers.l2(kernel_regularizer)
+        activation='relu',
     )(inp)
     x = layers.BatchNormalization()(x)
     x = layers.ConvLSTM2D(
@@ -64,8 +60,7 @@ def create_model(params):
         kernel_size=(3, 3),
         padding='same',
         return_sequences=True,
-        # activation='relu',
-        # kernel_regularizer=regularizers.l2(kernel_regularizer)
+        activation='relu',
     )(x)
     x = layers.BatchNormalization()(x)
     x = layers.ConvLSTM2D(
@@ -73,8 +68,7 @@ def create_model(params):
         kernel_size=(3, 3),
         padding='same',
         return_sequences=True,
-        # activation='relu',
-        # kernel_regularizer=regularizers.l2(kernel_regularizer)
+        activation='relu',
     )(x)
     x = layers.BatchNormalization()(x)
     x = layers.Conv3D(
@@ -94,10 +88,12 @@ def create_model(params):
 # Multi Variable Model
 def main():
     model_name = 'ruv_model_baseline'
+    print('-'*60)
+    print(f'Model Name: {model_name}')
+    print('-'*60)
     params = {
         'filters': 64,
         'adam_learning_rate': 0.001,
-        #'kernel_regularizer': 0.001
     }
     keras.backend.clear_session()
 
