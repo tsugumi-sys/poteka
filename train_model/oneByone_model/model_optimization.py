@@ -94,7 +94,7 @@ def objective(trial):
     #model_name = 'ruv_model'
     keras.backend.clear_session()
 
-    mlflow.set_experiment('Optuna_ConvLSTM')
+    mlflow.set_experiment('Optuna_Selected_ConvLSTM')
     mlflow.tensorflow.autolog(every_n_iter=1)
     with mlflow.start_run():
         # X, y = load_data_RUV()
@@ -125,7 +125,7 @@ def objective(trial):
 
 if __name__ == '__main__':
     try:
-        X, y = load_data_RUV()
+        X, y = load_data_RUV(dataType="selected")
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
         study = optuna.create_study(direction="minimize")
         study.optimize(objective, n_trials=100, gc_after_trial=True)

@@ -44,11 +44,12 @@ def save_csv(data_arr, path: str):
 
 
 def make_prediction(model_name='model1', time_span=60):
+    
+    model = load_model(f'../../../model/oneByone_model/{model_name}/model.h5')
     print('-' * 80)
     print('This is prediction with multi variable trained model')
     print(f'Model Name: {model_name}')
     print('-'*80)
-    model = load_model(f'../../../model/oneByone_model/{model_name}/model.h5')
     X, y, data_config = load_data_RUV()
 
     year = data_config['year'] # str
@@ -175,6 +176,6 @@ def make_prediction(model_name='model1', time_span=60):
 
 
 if __name__ == '__main__':
-    make_prediction(model_name="ruv_model_optuned_relu", time_span=60)
+    make_prediction(model_name="ruv_model_selectedData_optuned", time_span=60)
     #make_prediction(model_name="ruv_model_baseline_tanh", time_span=60)
     send_line('Succesfully Ended')

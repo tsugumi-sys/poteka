@@ -87,13 +87,13 @@ def create_model(params):
 
 # Multi Variable Model
 def main():
-    model_name = 'ruv_model_baseline'
+    model_name = 'ruv_model_optuned'
     print('-'*60)
     print(f'Model Name: {model_name}')
     print('-'*60)
     params = {
-        'filters': 64,
-        'adam_learning_rate': 0.001,
+        'filters': 44,
+        'adam_learning_rate': 0.0008217,
     }
     keras.backend.clear_session()
 

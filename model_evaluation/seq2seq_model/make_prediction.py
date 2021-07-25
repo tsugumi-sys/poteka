@@ -46,6 +46,7 @@ def save_csv(data_arr, path: str):
 def make_prediction(model_name='model1', time_span=60):
     print('-' * 80)
     print('This is prediction with multi variable trained model')
+    print('Model Name:', model_name)
     print('-'*80)
     model = load_model(f'../../../model/seq2seq_model/{model_name}/model.h5')
     X, y, data_config = load_data_RUV()
@@ -180,3 +181,4 @@ def make_prediction(model_name='model1', time_span=60):
 
 if __name__ == '__main__':
     make_prediction(model_name="ruv_model_baseline", time_span=60)
+    make_prediction(model_name='ruv_model_optuned', time_span=60)

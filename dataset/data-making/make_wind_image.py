@@ -93,25 +93,6 @@ def make_wind_image():
                                     # wind_div = np.where(wind_div < -10, -10, wind_div)
                                     # print(wind_div.max(), wind_div.min())
 
-                                    # # Save Fig
-                                    # fig = plt.figure(figsize=(7, 8), dpi=80)
-                                    # ax = plt.axes(projection=ccrs.PlateCarree())
-                                    # ax.set_extent([120.90, 121.150, 14.350, 14.760])
-                                    # ax.add_feature(cfeature.COASTLINE)
-                                    # gl = ax.gridlines(draw_labels=True, alpha=0)
-                                    # gl.right_labels = False
-                                    # gl.top_labels = False
-                                    
-                                    # # Colror Bar
-                                    # clevs = list(range(-10, 11))
-                                    # cmap = cm.coolwarm
-                                    # norm = mcolors.BoundaryNorm(clevs, cmap.N)
-
-                                    # cs = ax.contourf(xi, yi, wind_div, clevs, cmap=cmap, norm=norm)
-                                    # cbar = plt.colorbar(cs, orientation='vertical')
-                                    # cbar.set_label('wind divergence (/second)')
-                                    # plt.quiver(xi, yi, u_wind, v_wind)
-                                    # ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
 
                                     # Save Image and CSV
                                     save_path = '../../../data/wind_image'
@@ -122,8 +103,42 @@ def make_wind_image():
                                         save_path += f'/{folder}'
                                     save_csv_path = save_path + f'/{data_file}'
                                     save_path += '/{}'.format(data_file.replace('.csv', '.png'))
-                                    
-                                    #plt.savefig(save_path)
+                                    save_u_wind_fig_path = save_path.replace('.png', 'U.png')
+                                    save_v_wind_fig_path = save_path.replace('.png', 'V.png')
+
+                                    dic = {
+                                        'U-Wind': {
+                                            'save_path': save_u_wind_fig_path,
+                                            'data': u_wind
+                                        },
+                                        'V-Wind': {
+                                            'save_path': save_v_wind_fig_path,
+                                            'data': v_wind
+                                        }
+                                    }
+
+                                    for key in dic.keys():
+                                        fig = plt.figure(figsize=(7, 8), dpi=80)
+                                        ax = plt.axes(projection=ccrs.PlateCarree())
+                                        ax.set_extent([120.90, 121.150, 14.350, 14.760])
+                                        ax.add_feature(cfeature.COASTLINE)
+                                        gl = ax.gridlines(draw_labels=True, alpha=0)
+                                        gl.right_labels = False
+                                        gl.top_labels = False
+                                        
+                                        # Colror Bar
+                                        clevs = list(range(-10, 11))
+                                        cmap = cm.coolwarm
+                                        norm = mcolors.BoundaryNorm(clevs, cmap.N)
+
+                                        cs = ax.contourf(xi, yi, dic[key]['data'], clevs, cmap=cmap, norm=norm)
+                                        cbar = plt.colorbar(cs, orientation='vertical')
+                                        cbar.set_label('wind speed (m/second)')
+                                        ax.set_title(key)
+                                        #plt.quiver(xi, yi, u_wind, v_wind)
+                                        ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
+                                        plt.savefig(dic[key]['save_path'])
+                                        plt.close()
 
                                     uwind_df = pd.DataFrame(u_wind, index=np.flip(grid_lat), columns=grid_lon)
                                     vwind_df = pd.DataFrame(v_wind, index=np.flip(grid_lat), columns=grid_lon)
@@ -131,8 +146,6 @@ def make_wind_image():
                                     vwind_df.to_csv(save_csv_path.replace('.csv', 'V.csv'))
                                     #save_df.to_csv(save_csv_path)
                                     print('Sucessfully Saved')
-
-                                    #plt.close()
                                 except:
                                     print('!'*10,' Failed ', '!'*10)
                                     failed_path.append(path)

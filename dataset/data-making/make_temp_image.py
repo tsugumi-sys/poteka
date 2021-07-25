@@ -38,8 +38,8 @@ def make_temp_image():
     try:
         root_folder = '../../../data/one_day_data'
 
-        for year in ['2019']:#os.listdir(root_folder):
-            for month in ['10', '11']:#os.listdir(root_folder + f'/{year}'):
+        for year in os.listdir(root_folder):
+            for month in os.listdir(root_folder + f'/{year}'):
                 for date in os.listdir(root_folder + f'/{year}/{month}'):
                     if len(os.listdir(root_folder + f'/{year}/{month}/{date}')) > 0:
                         data_files = os.listdir(root_folder + f'/{year}/{month}/{date}')
@@ -79,8 +79,9 @@ def make_temp_image():
 
                                     cs = ax.contourf(xintrip, yintrip, temp_data, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation='vertical')
-                                    cbar.set_label('millimeter')
+                                    cbar.set_label('°C')
                                     ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
+                                    ax.set_title('Temperature')
 
                                     # Save Image
                                     save_path = '../../../data/temp_image'

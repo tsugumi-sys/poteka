@@ -90,10 +90,10 @@ def create_model(params):
 
 # Multi Variable Model
 def main():
-    model_name = 'ruv_model_optuned_relu'
+    model_name = 'ruv_model_selectedData_optuned'
     params = {
         'filters': 41,
-        'adam_learning_rate': 3.275e-05,
+        'adam_learning_rate': 0.000585,
         'activation': 'relu'
     }
     keras.backend.clear_session()
@@ -104,7 +104,7 @@ def main():
     print(model_name)
     print('-'*60)
     with mlflow.start_run(run_name=model_name):
-        X, y = load_data_RUV()
+        X, y = load_data_RUV(dataType='selected')
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
         model = create_model(params)
         mlflow.log_params(params)

@@ -12,6 +12,7 @@ from scipy.interpolate import Rbf
 import gstools as gs
 import random
 import requests
+from matplotlib import cm
 import tracemalloc
 from dotenv import load_dotenv
 from pathlib import Path
@@ -30,7 +31,7 @@ def send_line_notify(notification_message):
     requests.post(line_notify_api, headers = headers, data = data)
 
 
-def make_rain_image():
+def make_humidity_image():
     tracemalloc.start()
     failed_path = []
     try:
@@ -47,15 +48,28 @@ def make_rain_image():
                                 print('-'*80)
                                 print('PATH: ', path)
                                 try:
+                                    # df = pd.read_csv(path, index_col=0)
+                                    # bins = gs.standard_bins((df['LAT'], df['LON']), max_dist=np.deg2rad(0.5), latlon=True)
+                                    # bin_c, vario = gs.vario_estimate((df['LAT'], df['LON']), df['RH1'], bins, latlon=True)
+                                    # model = gs.Cubic(latlon=True, rescale=gs.EARTH_RADIUS, var=1, len_scale=1.0)
+                                    # model.fit_variogram(bin_c, vario, nugget=False)
+                                    # grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
+                                    # grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
+                                    # #z1, ss1 = np.round(OK.execute("grid", grid_lon, grid_lat), decimals=3)
+                                    # OK_gs = gs.krige.Ordinary(model, [df['LAT'], df['LON']], df['RH1'], exact=True)
+                                    # z1 = OK_gs.structured([grid_lat, grid_lon])
+                                    # z1 = z1[0]
+                                    # xintrip, yintrip = np.meshgrid(grid_lon, grid_lat)
+
                                     df = pd.read_csv(path, index_col=0)
-                                    df['hour-rain'] = np.where(df['hour-rain'] > 0, df['hour-rain'], round(random.uniform(0.1, 0.8), 5))
-                                    rbfi = Rbf(df['LON'], df['LAT'], df['hour-rain'], function='gaussian')
+                                    rbfi = Rbf(df['LON'], df['LAT'], df['RH1'], function='inverse')
                                     grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
                                     grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
                                     xi, yi = np.meshgrid(grid_lon, grid_lat)
                                     z1 = rbfi(xi, yi)
-                                    rain_data = np.where(z1 > 0, z1, 0)
-                                    rain_data = np.where(rain_data > 100, 100, rain_data)
+                                    
+                                    humid_data = np.where(z1 > 0, z1, 0)
+                                    humid_data = np.where(humid_data > 100, 100, humid_data)
                                     fig = plt.figure(figsize=(7, 8), dpi=80)
                                     ax = plt.axes(projection=ccrs.PlateCarree())
                                     ax.set_extent([120.90, 121.150, 14.350, 14.760])
@@ -64,32 +78,19 @@ def make_rain_image():
                                     gl.right_labels = False
                                     gl.top_labels = False
 
-                                    clevs = [0, 5, 7.5, 10, 15, 20, 30, 40,
-                                            50, 70, 100]
-                                    cmap_data = [(1.0, 1.0, 1.0),
-                                                (0.3137255012989044, 0.8156862854957581, 0.8156862854957581),
-                                                (0.0, 1.0, 1.0),
-                                                (0.0, 0.8784313797950745, 0.501960813999176),
-                                                (0.0, 0.7529411911964417, 0.0),
-                                                (0.501960813999176, 0.8784313797950745, 0.0),
-                                                (1.0, 1.0, 0.0),
-                                                (1.0, 0.6274510025978088, 0.0),
-                                                (1.0, 0.0, 0.0),
-                                                (1.0, 0.125490203499794, 0.501960813999176),
-                                                (0.9411764740943909, 0.250980406999588, 1.0),
-                                                (0.501960813999176, 0.125490203499794, 1.0),
-                                                ]
-                                    cmap = mcolors.ListedColormap(cmap_data, 'precipitation')
+                                    clevs = [i for i in range(0, 100, 5)]
+                                    
+                                    cmap = cm.Blues
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(xi, yi, rain_data, clevs, cmap=cmap, norm=norm)
+                                    cs = ax.contourf(xi, yi, humid_data, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation='vertical')
-                                    cbar.set_label('mm/h')
+                                    cbar.set_label('%')
                                     ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
-                                    ax.set_title('Hourly Rainfall')
+                                    ax.set_title('Humidity')
                                     
                                     # Save Image and Csv
-                                    save_path = '../../../data/rain_image'
+                                    save_path = '../../../data/humidity_image'
                                     folders = [year, month, date]
                                     for folder in folders:
                                         if not os.path.exists(save_path + f'/{folder}'):
@@ -99,7 +100,7 @@ def make_rain_image():
                                     save_path += '/{}'.format(data_file.replace('.csv', '.png'))
                                     plt.savefig(save_path)
 
-                                    save_df = pd.DataFrame(rain_data, index=np.flip(grid_lat), columns=grid_lon)
+                                    save_df = pd.DataFrame(humid_data, index=np.flip(grid_lat), columns=grid_lon)
                                     save_df.to_csv(save_csv_path)
                                     print('Sucessfully Saved')
 
@@ -118,4 +119,4 @@ def make_rain_image():
         print(traceback.format_exc())
                         
 if __name__ == '__main__':
-    make_rain_image()
+    make_humidity_image()
