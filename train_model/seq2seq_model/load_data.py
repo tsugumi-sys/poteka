@@ -128,6 +128,7 @@ def load_data_RUV(dataType='all'): # Rain U-Wind V-Wind
                                 label_arrs.append(arr)
                             label_arr.append(label_arrs)
 
+
         input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, 3])
         label_arr = np.array(label_arr).reshape([len(label_arr), 6, 50, 50, 1])
 
@@ -192,6 +193,11 @@ def load_data_RUV(dataType='all'): # Rain U-Wind V-Wind
                         label_arrs.append(arr)
                     label_arr.append(label_arrs)
 
+                    # Check Nan
+                    for arr in subset_arrs:
+                        nan_count = np.count_nonzero(np.isnan(arr))
+                        if nan_count > 0:
+                            print("NaN here: ", date)
         input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, 3])
         label_arr = np.array(label_arr).reshape([len(label_arr), 6, 50, 50, 1])
 

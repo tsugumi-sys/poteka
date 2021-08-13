@@ -29,13 +29,13 @@ folder_path = "../../../data/accumulated-raf-data"
 
 ob_locations = pd.read_csv('../../../p-poteka-config/observation_point.csv', index_col="Name")
 
-years = ['2019']#, '2020']
-monthes = ['10', '11']#['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11']
+years = ['2020']
+monthes = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11']
 dates = [make_dates(i) for i in range(1, 32)]
 
-cols = ['LON', 'LAT', 'hour-rain', 'AT1', 'RH1', 'SOL', 'WD1', 'WS1']
+cols = ['LON', 'LAT', 'hour-rain', 'AT1', 'RH1', 'SOL', 'WD1', 'WS1', 'PRS', 'SLP']
 
-data_cols = ['hour-rain', 'AT1', 'RH1', 'SOL', 'WD1', 'WS1']
+data_cols = ['hour-rain', 'AT1', 'RH1', 'SOL', 'WD1', 'WS1', 'PRS', 'SLP']
 
 for year in years:
     for month in monthes:
@@ -47,8 +47,8 @@ for year in years:
                     count += 1
             
             # Create One day Data
-            #if count > 30:
-            if 3 == 3:
+            try:
+                time_list = create_time_list(int(year), int(month), int(date))
                 print(f'{year}-{month}-{date} ', count)
                 ob_data = []
                 ob_names = []
@@ -62,7 +62,6 @@ for year in years:
                         ob_lon, ob_lat = ob_locations.loc[ob_point, 'LON'], ob_locations.loc[ob_point, 'LAT']
                         ob_lon_lat.append([ob_lon, ob_lat])
                 
-                time_list = create_time_list(int(year), int(month), int(date))
                 
                 # Save Folder
                 save_folder_path = "../../../data/one_day_data"
@@ -83,7 +82,10 @@ for year in years:
                         df.loc[ob_name, 'LON'], df.loc[ob_name, 'LAT'] = ob_point
                         for col in data_cols:
                             df.loc[ob_name, col] = data.loc[time, col]
-                    print(df)
+                    #print(df)
                     
                     save_path = save_folder_path + f'/{datetime_obj.hour}-{datetime_obj.minute}.csv'
                     df.to_csv(save_path)
+            except ValueError:
+                print(f'{year}-{month}-{date} does not exists')
+                continue

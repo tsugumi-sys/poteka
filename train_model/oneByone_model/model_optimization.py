@@ -13,7 +13,7 @@ import mlflow
 from mlflow import pyfunc
 import mlflow.tensorflow
 
-from load_data import load_data_RUV, load_rain_data, load_data_RWT
+from load_data import load_data
 import sys
 sys.path.insert(0, '..')
 from Models.DLWP.model import DLWP_ConvLSTM
@@ -45,11 +45,12 @@ def create_model(trial):
     filters = trial.suggest_int("filters", 16, 64)
     adam_learning_rate = trial.suggest_loguniform("adam_learning_rate", 1e-5, 1e-1)
     activation = "relu"
+    feature_num = 7
 
 
     # Kernel regularizer make prediction worse...
     
-    inp = layers.Input(shape=(None, HEIGHT, WIDTH, 3))
+    inp = layers.Input(shape=(None, HEIGHT, WIDTH, feature_num))
     x = layers.ConvLSTM2D(
         filters=filters,
         kernel_size=(5, 5),
@@ -75,7 +76,7 @@ def create_model(trial):
     )(x)
     x = layers.BatchNormalization()(x)
     x = layers.ConvLSTM2D(
-        filters=3,
+        filters=feature_num,
         kernel_size=3,
         padding='same',
         return_sequences=False,
@@ -94,11 +95,9 @@ def objective(trial):
     #model_name = 'ruv_model'
     keras.backend.clear_session()
 
-    mlflow.set_experiment('Optuna_Selected_ConvLSTM')
+    mlflow.set_experiment('Optuna_Selected__ruvthpp_ConvLSTM')
     mlflow.tensorflow.autolog(every_n_iter=1)
     with mlflow.start_run():
-        # X, y = load_data_RUV()
-        # X_train, X_valid, y_train, y_valid = train_test_split(X.copy(), y.copy(), test_size=0.2, random_state=11)
         
         model = create_model(trial)
 
@@ -125,10 +124,10 @@ def objective(trial):
 
 if __name__ == '__main__':
     try:
-        X, y = load_data_RUV(dataType="selected")
+        X, y = load_data(dataType="selected", params=['rain', 'humidity', 'temperature', 'wind', 'abs_wind', 'station_pressure', 'seaLevel_pressure'])
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
         study = optuna.create_study(direction="minimize")
-        study.optimize(objective, n_trials=100, gc_after_trial=True)
+        study.optimize(objective, n_trials=50, gc_after_trial=True)
 
         print("Number of finished trials", len(study.trials))
         print('Best Trials: ')

@@ -3,6 +3,7 @@ import numpy as np
 import os
 from datetime import datetime, timedelta
 import tracemalloc
+import sys
 
 def datetime_range(start, end, delta):
     current = start
@@ -57,6 +58,36 @@ def load_csv_data(path: str):
         # Scale [-10, 10]
         return min_max_scaler(-10, 10, df.values)
 
+    elif 'humidity' in path:
+        return min_max_scaler(0, 100, df.values)
+
+    elif 'pressure' in path:
+        return min_max_scaler(990, 1025, df.values)
+
+def get_param_path(param_name: str, year, month, date):
+    if 'rain' in param_name:
+        return f'../../../data/rain_image/{year}/{month}/{date}'
+    elif 'abs_wind' in param_name:
+        return f'../../../data/abs_wind_image/{year}/{month}/{date}'
+    elif 'wind' in param_name:
+        return f'../../../data/wind_image/{year}/{month}/{date}'
+    elif 'temperature' in param_name:
+        return f'../../../data/temp_image/{year}/{month}/{date}'
+    elif 'humidity' in param_name:
+        return f'../../../data/humidity_image/{year}/{month}/{date}'
+    elif 'station_pressure' in param_name:
+        return f'../../../data/station_pressure_image/{year}/{month}/{date}'
+    elif 'seaLevel_pressure' in param_name:
+        return f'../../../data/seaLevel_pressure_image/{year}/{month}/{date}'
+    else:
+        print(param_name, "is wrong or spell missing.")
+        return
+
+def chack_data_scale(data):
+    if data.max() > 1 or data.min() < 0:
+        return False
+    else: return True
+
 def datetime_range(start, end, delta):
     current = start
     while current <= end:
@@ -68,7 +99,7 @@ def create_time_list(year=2020, month=1, date=1):
     return dts
 
 
-def load_data_RUV(dataType='all'): # Rain U-Wind V-Wind
+def load_data(dataType='all', params=['rain', 'humidity', 'temperature', 'wind']):
 
     if dataType == 'all':
         tracemalloc.start()
@@ -84,50 +115,47 @@ def load_data_RUV(dataType='all'): # Rain U-Wind V-Wind
             log_memory()
             dates = os.listdir(f'../../../data/rain_image/{year}/{month}')
             for date in dates:
-                print(date)
-                rain_path = f'../../../data/rain_image/{year}/{month}/{date}'
-                wind_path = f'../../../data/wind_image/{year}/{month}/{date}'
-                if os.path.exists(rain_path) and os.path.exists(wind_path):
-                    rain_file_num = len(os.listdir(rain_path))
-                    wind_file_num = len(os.listdir(wind_path))
-                    if rain_file_num + wind_file_num == 288 * 3:
-                        for step in range(0, len(time_list) - 6, 6):
-                            file_names = [f'{dt.hour}-{dt.minute}.csv' for dt in time_list[step:step+12]]
-                            
-                            subset_arrs = []
-                            for file_name in file_names:
-                                # Load data
-                                rain_file_path = rain_path + f'/{file_name}'
-                                u_wind_file_path = wind_path + f'/{file_name}'.replace('.csv', 'U.csv')
-                                v_wind_file_path = wind_path + f'/{file_name}'.replace('.csv', 'V.csv')
+                print("... Loading", date)
+                params_path = {}
+                if len(params) > 0:
+                    for par in params:
+                        params_path[par] = get_param_path(param_name=par, year=year, month=month, date=date)
+                
+                for step in range(0, len(time_list) - 6, 6):
+                    file_names = [f'{dt.hour}-{dt.minute}.csv' for dt in time_list[step:step+12]]
+                    
+                    subset_arrs = []
+                    for file_name in file_names:
+                        params_data = {}
+                        # Load data
+                        for par in params:
+                            if 'wind' in par:
+                                params_data['u_wind'] = load_csv_data(params_path[par] + f'/{file_name}'.replace('.csv', 'U.csv'))
+                                params_data['v_wind'] = load_csv_data(params_path[par] + f'/{file_name}'.replace('.csv', 'V.csv'))
                                 
-                                # Create ndarray
-                                rain_arr = load_csv_data(rain_file_path)
-                                u_wind_arr = load_csv_data(u_wind_file_path)
-                                v_wind_arr = load_csv_data(v_wind_file_path)
-                                # print('Rain Data', rain_arr.max(), rain_arr.min())
-                                # print('U Wind Data', u_wind_arr.max(), u_wind_arr.min())
-                                # print('V Wind Data', v_wind_arr.max(), v_wind_arr.min())
-                                subset_arr = np.empty([50, 50, 3])
-                                for i in range(50):
-                                    for j in range(50):
-                                        subset_arr[i, j, 0] = rain_arr[i, j]
-                                        subset_arr[i, j, 1] = u_wind_arr[i, j]
-                                        subset_arr[i, j, 2] = v_wind_arr[i, j]
-                                
-                                subset_arrs.append(subset_arr)
-                            
-                            input_arr.append(subset_arrs[:6])
-                            label_arr.append(subset_arrs[6])
-                            # l_arr = np.empty([50, 50])
-                            
-                            # for i in range(50):
-                            #     for j in range(50):
-                            #         l_arr[i, j] = subset_arrs[6][i, j, 0]
-                            # label_arr.append(l_arr)
+                            else:
+                                params_data[par] = load_csv_data(params_path[par] + f'/{file_name}')
 
-        input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, 3])
-        label_arr = np.array(label_arr).reshape([len(label_arr), 50, 50, 3])
+                        # Check if data is valid
+                        for key in params_data.keys():
+                            if not chack_data_scale(params_data[key]):
+                                print(year, month, date, file_name, key, " Has invalid scale.(x > 1 or x < 0)")
+                                sys.exit()
+                        
+                        subset_arr = np.empty([50, 50, len(params_data.keys())])
+                        for i in range(50):
+                            for j in range(50):
+                                for k, key in enumerate(params_data.keys()):
+                                    subset_arr[i, j, k] = params_data[key][i, j]
+                                    
+                        
+                        subset_arrs.append(subset_arr)
+                        
+                    input_arr.append(subset_arrs[:6])
+                    label_arr.append(subset_arrs[6])
+
+        input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, len(params_data.keys())])
+        label_arr = np.array(label_arr).reshape([len(label_arr), 50, 50, len(params_data.keys())])
 
         return input_arr, label_arr
 
@@ -145,154 +173,56 @@ def load_data_RUV(dataType='all'): # Rain U-Wind V-Wind
         for date in train_list.index:
             log_memory()
             month = date.split('-')[1]
-            print(date)
 
-            rain_path = f'../../../data/rain_image/{year}/{month}/{date}'
-            wind_path = f'../../../data/wind_image/{year}/{month}/{date}'
-            if os.path.exists(rain_path) and os.path.exists(wind_path):
-                start, end = train_list.loc[date, 'start'], train_list.loc[date, 'end']
-                idx_start, idx_end = csv_files.index(start), csv_files.index(end)
-                idx_start = idx_start - 12 if idx_start > 11 else 0
-                idx_end = idx_end + 12 if idx_end < 132 else 143
-               
-                for i in range(idx_start, idx_end-12):
-                    file_names = csv_files[i:i+12]
-                    
-                    subset_arrs = []
-                    for file_name in file_names:
-                        # Load data
-                        rain_file_path = rain_path + f'/{file_name}'
-                        u_wind_file_path = wind_path + f'/{file_name}'.replace('.csv', 'U.csv')
-                        v_wind_file_path = wind_path + f'/{file_name}'.replace('.csv', 'V.csv')
-                        
-                        # Create ndarray
-                        rain_arr = load_csv_data(rain_file_path)
-                        u_wind_arr = load_csv_data(u_wind_file_path)
-                        v_wind_arr = load_csv_data(v_wind_file_path)
-                        # print('Rain Data', rain_arr.max(), rain_arr.min())
-                        # print('U Wind Data', u_wind_arr.max(), u_wind_arr.min())
-                        # print('V Wind Data', v_wind_arr.max(), v_wind_arr.min())
-                        subset_arr = np.empty([50, 50, 3])
-                        for i in range(50):
-                            for j in range(50):
-                                subset_arr[i, j, 0] = rain_arr[i, j]
-                                subset_arr[i, j, 1] = u_wind_arr[i, j]
-                                subset_arr[i, j, 2] = v_wind_arr[i, j]
-                        
-                        subset_arrs.append(subset_arr)
-                    
-                    input_arr.append(subset_arrs[:6])
-                    label_arr.append(subset_arrs[6])
+            print("... Loading", date)
+            params_path = {}
+            if len(params) > 0:
+                for par in params:
+                    params_path[par] = get_param_path(param_name=par, year=year, month=month, date=date)
 
-        input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, 3])
-        label_arr = np.array(label_arr).reshape([len(label_arr), 50, 50, 3])
+            start, end = train_list.loc[date, 'start'], train_list.loc[date, 'end']
+            idx_start, idx_end = csv_files.index(start), csv_files.index(end)
+            idx_start = idx_start - 12 if idx_start > 11 else 0
+            idx_end = idx_end + 12 if idx_end < 132 else 143
+            
+            for i in range(idx_start, idx_end-12):
+                file_names = csv_files[i:i+12]
+
+                subset_arrs = []
+                for file_name in file_names:
+                    params_data = {}
+                    # Load data
+                    for par in params:
+                        if 'wind' in par and par != 'abs_wind':
+                            params_data['u_wind'] = load_csv_data(params_path[par] + f'/{file_name}'.replace('.csv', 'U.csv'))
+                            params_data['v_wind'] = load_csv_data(params_path[par] + f'/{file_name}'.replace('.csv', 'V.csv'))
+                            
+                        else:
+                            params_data[par] = load_csv_data(params_path[par] + f'/{file_name}')
+
+                    # Check if data is valid
+                    for key in params_data.keys():
+                        if not chack_data_scale(params_data[key]):
+                            print(year, month, date, file_name, key, " Has invalid scale.(x > 1 or x < 0)")
+                            sys.exit()
+                    
+                    subset_arr = np.empty([50, 50, len(params_data.keys())])
+                    for i in range(50):
+                        for j in range(50):
+                            for k, key in enumerate(params_data.keys()):
+                                subset_arr[i, j, k] = params_data[key][i, j]
+                                
+                    
+                    subset_arrs.append(subset_arr)
+                    
+                input_arr.append(subset_arrs[:6])
+                label_arr.append(subset_arrs[6])
+
+        input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, len(params_data.keys())])
+        label_arr = np.array(label_arr).reshape([len(label_arr), 50, 50, len(params_data.keys())])
 
         return input_arr, label_arr
 
-def load_data_RWT(): # Rain Absolute Wind Temperature
-    tracemalloc.start()
-
-    time_list = create_time_list()
-
-    input_arr = []
-    label_arr = []
-
-    year = 2020
-    monthes = ['04', '05', '06', '07', '08', '09', '10']
-    for month in monthes:
-        log_memory()
-        dates = os.listdir(f'../../../data/rain_image/{year}/{month}')
-        for date in dates:
-            print(date)
-            rain_path = f'../../../data/rain_image/{year}/{month}/{date}'
-            temp_path = f'../../../data/temp_image/{year}/{month}/{date}'
-            abs_wind_path = f'../../../data/abs_wind_image/{year}/{month}/{date}'
-            if os.path.exists(rain_path) and os.path.exists(abs_wind_path) and os.path.exists(temp_path):
-                rain_file_num = len(os.listdir(rain_path))
-                temp_file_num = len(os.listdir(temp_path))
-                abs_wind_file_num = len(os.listdir(abs_wind_path))
-                if rain_file_num == 288:
-                    for step in range(0, len(time_list) - 6, 6):
-                        file_names = [f'{dt.hour}-{dt.minute}.csv' for dt in time_list[step:step+12]]
-                        
-                        subset_arrs = []
-                        for file_name in file_names:
-                            # Load data
-                            rain_file_path = rain_path + f'/{file_name}'
-                            temp_file_path = temp_path + f'/{file_name}'
-                            abs_wind_file_path = abs_wind_path + f'/{file_name}'
-                            
-                            # Create ndarray
-                            rain_arr = load_csv_data(rain_file_path)
-                            temp_arr = load_csv_data(temp_file_path)
-                            abs_wind_arr = load_csv_data(abs_wind_file_path)
-                            
-                            #print('Absolute Wind Data', abs_wind_arr.max(), abs_wind_arr.min())
-                            
-                            subset_arr = np.empty([50, 50, 3])
-                            for i in range(50):
-                                for j in range(50):
-                                    subset_arr[i, j, 0] = rain_arr[i, j]
-                                    subset_arr[i, j, 1] = temp_arr[i, j]
-                                    subset_arr[i, j, 2] = abs_wind_arr[i, j]
-                            
-                            subset_arrs.append(subset_arr)
-                        
-                        input_arr.append(subset_arrs[:6])
-                        label_arr.append(subset_arrs[6])
-
-    input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, 3])
-    label_arr = np.array(label_arr).reshape([len(label_arr), 1, 50, 50, 3])
-
-    return input_arr, label_arr
-
-
-def load_rain_data():
-    tracemalloc.start()
-
-    time_list = create_time_list()
-
-    input_arr = []
-    label_arr = []
-
-    year = 2020
-    monthes = ['04', '05', '06', '07', '08', '09', '10']
-    for month in monthes:
-        log_memory()
-        dates = os.listdir(f'../../../data/rain_image/{year}/{month}')
-        for date in dates:
-            print(date)
-            rain_path = f'../../../data/rain_image/{year}/{month}/{date}'
-            if os.path.exists(rain_path):
-                rain_file_num = len(os.listdir(rain_path))
-                if rain_file_num == 288:
-                    for step in range(0, len(time_list) - 6, 6):
-                        file_names = [f'{dt.hour}-{dt.minute}.csv' for dt in time_list[step:step+12]]
-                        
-                        subset_arrs = []
-                        for file_name in file_names:
-                            # Load data
-                            rain_file_path = rain_path + f'/{file_name}'
-                            
-                            # Create ndarray
-                            rain_arr = load_csv_data(rain_file_path)
-                            subset_arr = np.empty([50, 50, 3])
-                            for i in range(50):
-                                for j in range(50):
-                                    subset_arr[i, j, 0] = rain_arr[i, j]
-                                    subset_arr[i, j, 1] = 0
-                                    subset_arr[i, j, 2] = 0
-                            
-                            subset_arrs.append(subset_arr)
-                        
-                        input_arr.append(subset_arrs[:6])
-                        label_arr.append(subset_arrs[6])
-
-    input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, 3])
-    label_arr = np.array(label_arr).reshape([len(label_arr), 1, 50, 50, 3])
-
-    return input_arr, label_arr
-
 if __name__ == '__main__':
-    input_arr, label_arr = load_data_RUV(dataType='selected')
+    input_arr, label_arr = load_data(dataType='selected', params=['rain', 'humidity', 'abs_wind', 'station_pressure', 'seaLevel_pressure'])
     print(input_arr.shape, label_arr.shape)

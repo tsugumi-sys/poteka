@@ -74,5 +74,6 @@ def make_prediction_image(model_type='oneByone_model', model_name='model1', time
                         make_rain_image(path + file_name)
 
 if __name__ == '__main__':
-    make_prediction_image(model_type='oneByone_model', model_name='ruv_model_selectedData_optuned', time_span=60)
+    #make_prediction_image(model_type='oneByone_model', model_name='rth_baseline', time_span=60)
+    make_prediction_image(model_type='oneByone_model', model_name='rth_optuna', time_span=60)
     #make_prediction_image(model_type='seq2seq_model', model_name='ruv_model_optuned', time_span=60)

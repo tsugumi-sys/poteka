@@ -13,7 +13,7 @@ import mlflow
 from mlflow import pyfunc
 import mlflow.tensorflow
 
-from load_data import load_data_RUV, load_rain_data, load_data_RWT
+from load_data import load_data
 import sys
 sys.path.insert(0, '..')
 from Models.DLWP.model import DLWP_ConvLSTM
@@ -46,9 +46,9 @@ def create_model(params):
     adam_learning_rate = params['adam_learning_rate']
     activation = params['activation']
 
-    # Kernel regularizer make prediction worse...
+    feature_num = 3
     
-    inp = layers.Input(shape=(None, HEIGHT, WIDTH, 3))
+    inp = layers.Input(shape=(None, HEIGHT, WIDTH, feature_num))
     x = layers.ConvLSTM2D(
         filters=filters,
         kernel_size=(5, 5),
@@ -74,7 +74,7 @@ def create_model(params):
     )(x)
     x = layers.BatchNormalization()(x)
     x = layers.ConvLSTM2D(
-        filters=3,
+        filters=feature_num,
         kernel_size=3,
         padding='same',
         return_sequences=False,
@@ -90,10 +90,19 @@ def create_model(params):
 
 # Multi Variable Model
 def main():
-    model_name = 'ruv_model_selectedData_optuned'
+
+    # filters: 59
+    # adam_learning_rate: 0.0014853777932379527
+
+    # Baseline
+    # filters: 64
+    # adam_learning_rate: 0.001
+
+
+    model_name = 'rth_optuna'
     params = {
-        'filters': 41,
-        'adam_learning_rate': 0.000585,
+        'filters': 59,
+        'adam_learning_rate': 0.001485,
         'activation': 'relu'
     }
     keras.backend.clear_session()
@@ -104,7 +113,7 @@ def main():
     print(model_name)
     print('-'*60)
     with mlflow.start_run(run_name=model_name):
-        X, y = load_data_RUV(dataType='selected')
+        X, y = load_data(dataType='selected', params=['rain', 'humidity', 'temperature'])
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
         model = create_model(params)
         mlflow.log_params(params)
