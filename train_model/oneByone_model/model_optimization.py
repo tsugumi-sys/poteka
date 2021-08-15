@@ -13,11 +13,11 @@ import mlflow
 from mlflow import pyfunc
 import mlflow.tensorflow
 
-from load_data import load_data
+from load_data import train_data_generator, get_train_valid_paths, load_valid_data
 import sys
-sys.path.insert(0, '..')
-from Models.DLWP.model import DLWP_ConvLSTM
-from Models.Keras_EG.model import Keras_EG, Modified_Keras_EG, Modified_Keras_EG_OnebyOne
+# sys.path.insert(0, '..')
+# from Models.DLWP.model import DLWP_ConvLSTM
+# from Models.Keras_EG.model import Keras_EG, Modified_Keras_EG, Modified_Keras_EG_OnebyOne
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
@@ -45,7 +45,7 @@ def create_model(trial):
     filters = trial.suggest_int("filters", 16, 64)
     adam_learning_rate = trial.suggest_loguniform("adam_learning_rate", 1e-5, 1e-1)
     activation = "relu"
-    feature_num = 7
+    feature_num = 5
 
 
     # Kernel regularizer make prediction worse...
@@ -110,10 +110,10 @@ def objective(trial):
         )
         
         history = model.fit(
-            X_train, y_train,
+            train_data_generator(train_paths, batch_size=32),
             validation_data=(X_valid, y_valid),
             epochs=500,
-            batch_size=16,
+            steps_per_epoch=len(train_paths.keys()) // 32,
             callbacks=[early_stopping],
             verbose=1
         )
@@ -124,8 +124,10 @@ def objective(trial):
 
 if __name__ == '__main__':
     try:
-        X, y = load_data(dataType="selected", params=['rain', 'humidity', 'temperature', 'wind', 'abs_wind', 'station_pressure', 'seaLevel_pressure'])
-        X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
+        # X, y = load_data(dataType="selected", params=['rain', 'humidity', 'temperature', 'abs_wind', 'seaLevel_pressure'])
+        # X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
+        train_paths, valid_paths = get_train_valid_paths(params=['rain', 'humidity', 'temperature', 'abs_wind', 'seaLevel_pressure'])
+        X_valid, y_valid = load_valid_data(valid_paths)
         study = optuna.create_study(direction="minimize")
         study.optimize(objective, n_trials=50, gc_after_trial=True)
 
