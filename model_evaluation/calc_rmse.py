@@ -44,7 +44,7 @@ def calc_period_rmse(model_type, model_name, time_span):
 # Calculate RMSE of each time and day
 def calc_rmse(model_type='oneByone_model', model_name='model1', time_span=60):
     print('-'*60)
-    print(model_type, model_name, time_span)
+    print(model_type, model_name, f'{time_span}min')
     print('-'*60)
     csv_files = csv_list(2020,1,1)
     monthes = ['10', '11']
@@ -67,12 +67,12 @@ def calc_rmse(model_type='oneByone_model', model_name='model1', time_span=60):
             rmse_df.to_csv(prediction_root + month + f'/RMSE/{date}.csv')
 
 if __name__ == '__main__':
-    # calc_rmse(model_type='oneByone_model', model_name='ruvth_baseline', time_span=60)
-    # calc_rmse(model_type='oneByone_model', model_name='ruvth_optuned', time_span=60)
+    #calc_rmse(model_type='oneByone_model', model_name='ruvthpp_baseline', time_span=60)
+    #calc_rmse(model_type='oneByone_model', model_name='ruvthpp_optuna', time_span=60)
 
     models = {
         'oneByone_model': {
-            'model_names': ['ruvth_baseline', 'ruvth_optuned'],
+            'model_names': ['ruv_model_selectedData_optuned', 'rth_optuna', 'ruvth_optuna', 'ruvthpp_optuna', 'rwthpp_optuna'],
             'time_span': 60,
         }
     }

@@ -1,4 +1,5 @@
 import os
+from random import shuffle
 import requests
 import numpy as np
 import pandas as pd
@@ -13,7 +14,7 @@ import mlflow
 from mlflow import pyfunc
 import mlflow.tensorflow
 
-from load_data import train_data_generator, get_train_valid_paths, load_valid_data
+from load_data import train_data_generator, get_train_valid_paths, load_valid_data, load_data
 import sys
 # sys.path.insert(0, '..')
 # from Models.DLWP.model import DLWP_ConvLSTM
@@ -40,12 +41,13 @@ def create_model(trial):
     # Input Shape Pramameters
     HEIGHT = 50
     WIDTH = 50
+    feature_num = 6
 
     # Parameters
     filters = trial.suggest_int("filters", 16, 64)
     adam_learning_rate = trial.suggest_loguniform("adam_learning_rate", 1e-5, 1e-1)
     activation = "relu"
-    feature_num = 5
+    
 
 
     # Kernel regularizer make prediction worse...
@@ -91,15 +93,17 @@ def create_model(trial):
     return model
 
 # Multi Variable Model
-def objective(trial):
+def objective(trial, params):
     #model_name = 'ruv_model'
     keras.backend.clear_session()
 
-    mlflow.set_experiment('Optuna_Selected__ruvthpp_ConvLSTM')
+    mlflow.set_experiment('Optuna_Selected__rwthpp_ConvLSTM')
     mlflow.tensorflow.autolog(every_n_iter=1)
     with mlflow.start_run():
         
         model = create_model(trial)
+
+        mlflow.log_params(dict((f'parameter{i}', params[i]) for i in range(len(params))))
 
         mlflow.log_params(trial.params)
 
@@ -110,10 +114,12 @@ def objective(trial):
         )
         
         history = model.fit(
-            train_data_generator(train_paths, batch_size=32),
+            #train_data_generator(train_paths, batch_size=32),
+            X_train, y_train,
             validation_data=(X_valid, y_valid),
             epochs=500,
-            steps_per_epoch=len(train_paths.keys()) // 32,
+            #steps_per_epoch=len(train_paths.keys()) // 32,
+            batch_size=16,
             callbacks=[early_stopping],
             verbose=1
         )
@@ -124,12 +130,13 @@ def objective(trial):
 
 if __name__ == '__main__':
     try:
-        # X, y = load_data(dataType="selected", params=['rain', 'humidity', 'temperature', 'abs_wind', 'seaLevel_pressure'])
-        # X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
-        train_paths, valid_paths = get_train_valid_paths(params=['rain', 'humidity', 'temperature', 'abs_wind', 'seaLevel_pressure'])
-        X_valid, y_valid = load_valid_data(valid_paths)
+        input_params = ['rain', 'humidity', 'temperature', 'abs_wind', 'seaLevel_pressure','station_pressure']
+        X, y = load_data(dataType="selected", params=input_params)
+        X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11, shuffle=True)
+        # train_paths, valid_paths = get_train_valid_paths(params=['rain', 'humidity', 'temperature', 'abs_wind', 'seaLevel_pressure'])
+        # X_valid, y_valid = load_valid_data(valid_paths)
         study = optuna.create_study(direction="minimize")
-        study.optimize(objective, n_trials=50, gc_after_trial=True)
+        study.optimize(lambda trial: objective(trial, input_params), n_trials=50, gc_after_trial=True)
 
         print("Number of finished trials", len(study.trials))
         print('Best Trials: ')

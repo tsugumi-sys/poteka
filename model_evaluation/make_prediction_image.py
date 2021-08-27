@@ -66,14 +66,19 @@ def make_prediction_image(model_type='oneByone_model', model_name='model1', time
     for year in os.listdir(root_path):
         for month in os.listdir(root_path + f'/{year}'):
             for date in os.listdir(root_path + f'/{year}/{month}'):
-                path = root_path + f'/{year}/{month}/{date}/'
-                csv_files = [file_name for file_name in os.listdir(path) if '.csv' in file_name]
-                print(csv_files)
-                for file_name in csv_files:
-                    if os.path.exists(path + file_name):
-                        make_rain_image(path + file_name)
+                if date != 'RMSE':
+                    path = root_path + f'/{year}/{month}/{date}/'
+                    csv_files = [file_name for file_name in os.listdir(path) if '.csv' in file_name]
+                    print(csv_files)
+                    for file_name in csv_files:
+                        if os.path.exists(path + file_name):
+                            make_rain_image(path + file_name)
 
 if __name__ == '__main__':
-    #make_prediction_image(model_type='oneByone_model', model_name='rth_baseline', time_span=60)
-    make_prediction_image(model_type='oneByone_model', model_name='rth_optuna', time_span=60)
-    #make_prediction_image(model_type='seq2seq_model', model_name='ruv_model_optuned', time_span=60)
+    make_prediction_image(model_type='oneByone_model', model_name='ruvth_baseline', time_span=60)
+    make_prediction_image(model_type='oneByone_model', model_name='ruvth_optuna', time_span=60)
+    make_prediction_image(model_type='oneByone_model', model_name='ruvthpp_baseline', time_span=60)
+    make_prediction_image(model_type='oneByone_model', model_name='ruvthpp_optuna', time_span=60)
+    make_prediction_image(model_type='oneByone_model', model_name='ruv_model_selectedData_optuned', time_span=60)
+    make_prediction_image(model_type='oneByone_model', model_name='rwthpp_baseline', time_span=60)
+    make_prediction_image(model_type='oneByone_model', model_name='rwthpp_optuna', time_span=60)

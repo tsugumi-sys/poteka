@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import seaborn as sns
 import re
-import sklearn
 
 def datetime_range(start, end, delta):
     current = start
@@ -15,7 +14,7 @@ def datetime_range(start, end, delta):
         
 def create_time_list(year, month, date):
     dts = [dt.strftime('%Y-%m-%d T%H:%M Z') for dt in
-            datetime_range(datetime(year, month, date, 0), datetime(year, month, date, 23, 59), timedelta(minutes=10))]
+            datetime_range(datetime(year, month, date, 0), datetime(year, month, date, 23, 59), timedelta(minutes=2))]
     return dts
 
 def make_dates(x):
@@ -29,8 +28,8 @@ folder_path = "../../../data/accumulated-raf-data"
 
 ob_locations = pd.read_csv('../../../p-poteka-config/observation_point.csv', index_col="Name")
 
-years = ['2020']
-monthes = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11']
+years = ['2019']
+monthes = ['10', '11']#['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11']
 dates = [make_dates(i) for i in range(1, 32)]
 
 cols = ['LON', 'LAT', 'hour-rain', 'AT1', 'RH1', 'SOL', 'WD1', 'WS1', 'PRS', 'SLP']

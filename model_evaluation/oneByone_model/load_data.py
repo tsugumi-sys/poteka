@@ -58,15 +58,24 @@ def load_csv_data(path: str):
     elif 'humidity' in path:
         return min_max_scaler(0, 100, df.values)
 
+    elif 'pressure' in path:
+        return min_max_scaler(990, 1025, df.values)
+
 def get_param_path(param_name: str, year, month, date):
     if 'rain' in param_name:
         return f'../../../data/rain_image/{year}/{month}/{date}'
+    elif 'abs_wind' in param_name:
+        return f'../../../data/abs_wind_image/{year}/{month}/{date}'
     elif 'wind' in param_name:
         return f'../../../data/wind_image/{year}/{month}/{date}'
     elif 'temperature' in param_name:
         return f'../../../data/temp_image/{year}/{month}/{date}'
     elif 'humidity' in param_name:
         return f'../../../data/humidity_image/{year}/{month}/{date}'
+    elif 'station_pressure' in param_name:
+        return f'../../../data/station_pressure_image/{year}/{month}/{date}'
+    elif 'seaLevel_pressure' in param_name:
+        return f'../../../data/seaLevel_pressure_image/{year}/{month}/{date}'
     else:
         print(param_name, "is wrong or spell missing.")
         return
@@ -123,7 +132,7 @@ def load_data(params=['rain', 'humidity', 'temperature', 'wind']):
                     params_data = {}
                     # Load data
                     for par in params:
-                        if 'wind' in par:
+                        if 'wind' in par and par != 'abs_wind':
                             params_data['u_wind'] = load_csv_data(params_path[par] + f'/{file_name}'.replace('.csv', 'U.csv'))
                             params_data['v_wind'] = load_csv_data(params_path[par] + f'/{file_name}'.replace('.csv', 'V.csv'))
                             

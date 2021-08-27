@@ -37,7 +37,7 @@ def rescale_arr(min_value, max_value, arr):
 
 
 def save_csv(data_arr, path: str):
-    grid_lon, grid_lat = np.round(np.linspace(120.90, 121.50, 50), 3), np.round(np.linspace(14.350, 14.760, 50), 3)
+    grid_lon, grid_lat = np.round(np.linspace(120.90, 121.150, 50), 3), np.round(np.linspace(14.350, 14.760, 50), 3)
     df = pd.DataFrame(data_arr, index=np.flip(grid_lat), columns=grid_lon)
     df.to_csv(path)
     print(path)

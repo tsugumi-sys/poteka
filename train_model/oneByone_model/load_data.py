@@ -168,7 +168,6 @@ def load_data(dataType='all', params=['rain', 'humidity', 'temperature', 'wind']
         label_arr = []
 
         year = 2020
-        monthes = ['04', '05', '06', '07', '08', '09', '10']
 
         csv_files = csv_list(2020, 1, 1)
         train_list = pd.read_csv('../train_data_list.csv', index_col='date')
@@ -187,7 +186,7 @@ def load_data(dataType='all', params=['rain', 'humidity', 'temperature', 'wind']
             idx_start = idx_start - 12 if idx_start > 11 else 0
             idx_end = idx_end + 12 if idx_end < 132 else 143
             
-            for i in range(idx_start, idx_end-12):
+            for i in range(idx_start, idx_end-12, 3):
                 file_names = csv_files[i:i+12]
 
                 subset_arrs = []
@@ -247,7 +246,7 @@ def get_data_paths(params=['rain', 'station_pressure', 'seaLevel_pressure']):
         idx_end = idx_end + 12 if idx_end < 132 else 143
         
         count = 1
-        for i in range(idx_start, idx_end-12):
+        for i in range(idx_start, idx_end-12, 3):
             file_names = csv_files[i:i+12]
             sub_paths = {}
             for file_name in file_names:
@@ -336,6 +335,10 @@ def load_valid_data(paths):
     return load_data_from_paths(paths)
 
 if __name__ == '__main__':
+    tracemalloc.start()
+    log_memory()
     train_paths, valid_paths = get_train_valid_paths(params=['rain', 'humidity', 'temperature', 'abs_wind', 'seaLevel_pressure'])
+    log_memory()
     X_valid, y_valid = load_valid_data(valid_paths)
-    train_data_generator(train_paths)
+    log_memory()
+    # train_data_generator(train_paths)

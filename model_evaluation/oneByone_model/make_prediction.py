@@ -1,3 +1,4 @@
+from datetime import time
 import os
 import numpy as np
 import pandas as pd
@@ -36,21 +37,21 @@ def rescale_arr(min_value, max_value, arr):
 
 
 def save_csv(data_arr, path: str):
-    grid_lon, grid_lat = np.round(np.linspace(120.90, 121.50, 50), 3), np.round(np.linspace(14.350, 14.760, 50), 3)
+    grid_lon, grid_lat = np.round(np.linspace(120.90, 121.150, 50), 3), np.round(np.linspace(14.350, 14.760, 50), 3)
     df = pd.DataFrame(data_arr, index=np.flip(grid_lat), columns=grid_lon)
     df.to_csv(path)
     print(path)
 
 
-def make_prediction(model_name='model1', time_span=60):
+def make_prediction(model_name='model1', time_span=60, params=['rain', 'humidity', 'temperature', 'abs_wind', 'seaLevel_pressure','station_pressure', 'u_wind', 'v_wind']):
     
     model = load_model(f'../../../model/oneByone_model/{model_name}/model.h5')
     print('-' * 80)
     print('This is prediction with multi variable trained model')
     print(f'Model Name: {model_name}')
     print('-'*80)
-    X, y, data_config = load_data(params=['rain', 'humidity', 'temperature'])
-    feature_num = 3
+    X, y, data_config = load_data(params=params)
+    feature_num = len(params)
 
     year = data_config['year'] # str
     monthes = data_config['monthes'] # list
@@ -95,7 +96,11 @@ def make_prediction(model_name='model1', time_span=60):
 
 
 if __name__ == '__main__':
-    make_prediction(model_name="rth_baseline", time_span=60)
-    make_prediction(model_name="rth_optuna", time_span=60)
-    #make_prediction(model_name="ruv_model_baseline_tanh", time_span=60)
+    make_prediction(model_name="ruvth_baseline", time_span=60, params=['rain', 'u_wind', 'v_wind', 'temperature', 'humidity'])
+    make_prediction(model_name="ruvth_optuna", time_span=60, params=['rain', 'u_wind', 'v_wind', 'temperature', 'humidity'])
+    # make_prediction(model_name='ruv_model_selectedData_optuned', time_span=60, params=['rain', 'u_wind', 'v_wind'])
+    make_prediction(model_name='ruvthpp_baseline', time_span=60, params=['rain', 'humidity', 'temperature', 'u_wind', 'v_wind', 'seaLevel_pressure','station_pressure'])
+    make_prediction(model_name='ruvthpp_optuna', time_span=60, params=['rain', 'humidity', 'temperature', 'u_wind', 'v_wind', 'seaLevel_pressure','station_pressure'])
+    # make_prediction(model_name='rwthpp_baseline', time_span=60, params=['rain', 'humidity', 'temperature', 'abs_wind', 'seaLevel_pressure','station_pressure'])
+    # make_prediction(model_name='rwthpp_optuna', time_span=60, params=['rain', 'humidity', 'temperature', 'abs_wind', 'seaLevel_pressure','station_pressure'])
     send_line('Succesfully Ended')

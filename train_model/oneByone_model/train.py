@@ -36,7 +36,7 @@ def send_line(msg):
     res = requests.post(line_notify_endpoint, headers, data)
     return res.status_code
 
-def create_model(params):
+def create_model(params, feature_num):
     # Input Shape Pramameters
     HEIGHT = 50
     WIDTH = 50
@@ -46,7 +46,6 @@ def create_model(params):
     adam_learning_rate = params['adam_learning_rate']
     activation = params['activation']
 
-    feature_num = 3
     
     inp = layers.Input(shape=(None, HEIGHT, WIDTH, feature_num))
     x = layers.ConvLSTM2D(
@@ -91,20 +90,23 @@ def create_model(params):
 # Multi Variable Model
 def main():
 
-    # filters: 59
-    # adam_learning_rate: 0.0014853777932379527
+    # ruvthpp_optuna & baseline
+    # filters = 38
+    # lr = 0.00039
 
-    # Baseline
-    # filters: 64
-    # adam_learning_rate: 0.001
+    # ruvth_optuna & baseline
+    # filters = 38
+    # lr = 0.0005
 
 
-    model_name = 'rth_optuna'
+    model_name = 'ruvthpp_optuna_no_earystop'
     params = {
-        'filters': 59,
-        'adam_learning_rate': 0.001485,
+        'filters': 38,
+        'adam_learning_rate': 0.0005,
         'activation': 'relu'
     }
+    input_params = ['rain', 'humidity', 'temperature', 'u_wind', 'v_wind', 'seaLevel_pressure', 'station_pressure']
+   
     keras.backend.clear_session()
 
     mlflow.set_experiment('ConvLSTM')
@@ -113,10 +115,13 @@ def main():
     print(model_name)
     print('-'*60)
     with mlflow.start_run(run_name=model_name):
-        X, y = load_data(dataType='selected', params=['rain', 'humidity', 'temperature'])
-        X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
-        model = create_model(params)
         mlflow.log_params(params)
+        mlflow.log_params(dict((f'parameter{i}', input_params[i]) for i in range(len(input_params))))
+
+        X, y = load_data(dataType='selected', params=input_params)
+        X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
+        model = create_model(params, feature_num=len(input_params))
+
 
         early_stopping = callbacks.EarlyStopping(
             min_delta= 0.001,
@@ -126,9 +131,9 @@ def main():
         history = model.fit(
             X_train, y_train,
             validation_data=(X_valid, y_valid),
-            epochs=500,
+            epochs=1000,
             batch_size=16,
-            callbacks=[early_stopping],
+            #callbacks=[early_stopping],
             verbose=1
         )
 
@@ -144,35 +149,6 @@ def main():
     print('Model Successfully Saved')
     print(score)
     return score[-1]
-
-# Only Rain Model
-# def train_rain_model(model_name='model2'):
-#     X, y = load_rain_data()
-#     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=11)
-
-#     early_stopping = callbacks.EarlyStopping(
-#         min_delta= 0.01,
-#         patience= 20,
-#         restore_best_weights=True
-#     )
-#     model = create_model()
-#     history = model.fit(
-#         X_train, y_train,
-#         validation_data=(X_valid, y_valid),
-#         epochs=500,
-#         batch_size=32,
-#         callbacks=[early_stopping],
-#         verbose=1
-#     )
-
-#     save_path = f'../../../model/oneByone_model/{model_name}/'
-#     if not os.path.exists(save_path):
-#         os.mkdir(save_path)
-
-#     hist = pd.DataFrame(history.history)
-#     hist.to_csv(save_path + 'history.csv')
-#     model.save(save_path + 'model.h5')
-#     print('Model Successfully Saved')
 
 if __name__ == '__main__':
     try:
