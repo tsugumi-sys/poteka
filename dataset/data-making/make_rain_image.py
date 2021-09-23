@@ -1,3 +1,16 @@
+# import cartopy.crs as ccrs
+# import cartopy.feature as cfeature
+# import matplotlib.colors as mcolors
+# import pandas as pd
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import os
+# from pykrige.ok import OrdinaryKriging
+# import pykrige.kriging_tools as kt
+# from pykrige.kriging_tools import write_asc_grid
+# from scipy.interpolate import Rbf
+# import gstools as gs
+
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
@@ -5,16 +18,17 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from pykrige.ok import OrdinaryKriging
-import pykrige.kriging_tools as kt
-from pykrige.kriging_tools import write_asc_grid
-from scipy.interpolate import Rbf
+from scipy.interpolate import Rbf, RBFInterpolator
 import gstools as gs
+from matplotlib import cm
+
+
 import random
 import requests
 import tracemalloc
 from dotenv import load_dotenv
 from pathlib import Path
+import traceback
 
 dotenv_path = Path('../../.env')
 load_dotenv(dotenv_path=dotenv_path)
@@ -45,17 +59,25 @@ def make_rain_image():
                             path = root_folder + f'/{year}/{month}/{date}/{data_file}'
                             if os.path.exists(path):
                                 print('-'*80)
+                                print('Hourly Rainfall')
                                 print('PATH: ', path)
                                 try:
                                     df = pd.read_csv(path, index_col=0)
+                                    df['hour-rain--original'] = df['hour-rain']
                                     df['hour-rain'] = np.where(df['hour-rain'] > 0, df['hour-rain'], round(random.uniform(0.1, 0.8), 5))
-                                    rbfi = Rbf(df['LON'], df['LAT'], df['hour-rain'], function='gaussian')
+
+                                    rbfi = RBFInterpolator(y=df[['LON', 'LAT']], d=df['hour-rain'], kernel='gaussian', epsilon=61)
                                     grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
                                     grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
-                                    xi, yi = np.meshgrid(grid_lon, grid_lat)
-                                    z1 = rbfi(xi, yi)
+                                    # xi, yi = np.meshgrid(grid_lon, grid_lat)
+                                    xgrid = np.around(np.mgrid[120.90:121.150:50j, 14.350:14.760:50j], decimals=3)
+                                    xfloat = xgrid.reshape(2, -1).T
+                                    
+                                    z1 = rbfi(xfloat)
+                                    z1 = z1.reshape(50, 50)
                                     rain_data = np.where(z1 > 0, z1, 0)
                                     rain_data = np.where(rain_data > 100, 100, rain_data)
+
                                     fig = plt.figure(figsize=(7, 8), dpi=80)
                                     ax = plt.axes(projection=ccrs.PlateCarree())
                                     ax.set_extent([120.90, 121.150, 14.350, 14.760])
@@ -82,10 +104,12 @@ def make_rain_image():
                                     cmap = mcolors.ListedColormap(cmap_data, 'precipitation')
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(xi, yi, rain_data, clevs, cmap=cmap, norm=norm)
+                                    cs = ax.contourf(*xgrid, rain_data, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation='vertical')
                                     cbar.set_label('mm/h')
                                     ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
+                                    for i, val in enumerate(df['hour-rain--original']):
+                                        ax.annotate(val, (df['LON'][i], df['LAT'][i]))
                                     ax.set_title('Hourly Rainfall')
                                     
                                     # Save Image and Csv
@@ -99,20 +123,23 @@ def make_rain_image():
                                     save_path += '/{}'.format(data_file.replace('.csv', '.png'))
                                     plt.savefig(save_path)
 
-                                    save_df = pd.DataFrame(rain_data, index=np.flip(grid_lat), columns=grid_lon)
+                                    save_df = pd.DataFrame(rain_data)
+                                    save_df = save_df[save_df.columns[::-1]].T
+                                    save_df.columns = grid_lon
+                                    save_df.index = grid_lat[::-1]
                                     save_df.to_csv(save_csv_path)
                                     print('Sucessfully Saved')
 
                                     plt.close()
                                 except:
                                     print('!'*10,' Failed ', '!'*10)
+                                    print(traceback.format_exc())
                                     failed_path.append(path)
                                     continue
         failed = pd.DataFrame({'path': failed_path})
         failed.to_csv('failed.csv')
         send_line_notify('Succeccfuly Completed!!!')
     except:
-        import traceback
         send_line_notify("Process has Stopped with some error!!!")
         send_line_notify(traceback.format_exc())
         print(traceback.format_exc())

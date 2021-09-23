@@ -1,3 +1,19 @@
+# import cartopy.crs as ccrs
+# import cartopy.feature as cfeature
+# import matplotlib.colors as mcolors
+# import pandas as pd
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import os
+# from scipy.interpolate import Rbf
+# from matplotlib import cm
+# from metpy.units import units
+# from metpy.calc import wind_components, divergence, lat_lon_grid_deltas
+# from metpy.interpolate import interpolate_to_grid, remove_nan_observations
+
+from metpy.units import units
+from metpy.calc import wind_components, divergence, lat_lon_grid_deltas
+from metpy.interpolate import interpolate_to_grid, remove_nan_observations
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
@@ -5,11 +21,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from scipy.interpolate import Rbf
+from scipy.interpolate import Rbf, RBFInterpolator
+import gstools as gs
 from matplotlib import cm
-from metpy.units import units
-from metpy.calc import wind_components, divergence, lat_lon_grid_deltas
-from metpy.interpolate import interpolate_to_grid, remove_nan_observations
+
 import requests
 import tracemalloc
 import traceback
@@ -52,6 +67,7 @@ def make_wind_image():
                             path = root_folder + f'/{year}/{month}/{date}/{data_file}'
                             if os.path.exists(path):
                                 print('-'*80)
+                                print('U, V wind')
                                 print('PATH: ', path)
                                 try:
                                     df = pd.read_csv(path, index_col=0)
@@ -60,20 +76,29 @@ def make_wind_image():
                                     wind_df['LON'] = df['LON']
                                     wind_df['LAT'] = df['LAT']
                                     grid_size = 50
-                                    v_wind_rbfi = Rbf(wind_df['LON'], wind_df['LAT'], wind_df['V-WIND'].values, function='gaussian')
-                                    u_wind_rbfi = Rbf(wind_df['LON'], wind_df['LAT'], wind_df['U-WIND'].values, function='gaussian')
+                                    v_wind_rbfi = RBFInterpolator(y=wind_df[['LON', 'LAT']], d=wind_df['V-WIND'], kernel='linear', epsilon=10)
+                                    u_wind_rbfi = RBFInterpolator(y=wind_df[['LON', 'LAT']], d=wind_df['U-WIND'], kernel='linear', epsilon=10)
+                                    # v_wind_rbfi = Rbf(wind_df['LON'], wind_df['LAT'], wind_df['V-WIND'].values, function='gaussian')
+                                    # u_wind_rbfi = Rbf(wind_df['LON'], wind_df['LAT'], wind_df['U-WIND'].values, function='gaussian')
                                     grid_lon = np.round(np.linspace(120.90, 121.150, grid_size), decimals=3)
                                     grid_lat = np.round(np.linspace(14.350, 14.760, grid_size), decimals=3)
-                                    xi, yi = np.meshgrid(grid_lon, grid_lat)
-                                    v_wind = v_wind_rbfi(xi, yi)
-                                    u_wind = u_wind_rbfi(xi, yi)
-                                    v_wind = np.where(v_wind > 10, 10, v_wind)
+                                    # xi, yi = np.meshgrid(grid_lon, grid_lat)
+                                    xgrid = np.around(np.mgrid[120.90:121.150:50j, 14.350:14.760:50j], decimals=3)
+                                    xfloat = xgrid.reshape(2, -1).T
+
+                                    z_v_wind = v_wind_rbfi(xfloat)
+                                    z_u_wind = u_wind_rbfi(xfloat)
+                                    z_v_wind = z_v_wind.reshape(50, 50)
+                                    z_u_wind = z_u_wind.reshape(50, 50)
+
+                                    v_wind = np.where(z_v_wind > 10, 10, z_v_wind)
                                     v_wind = np.where(v_wind < -10, -10, v_wind)
-                                    u_wind = np.where(u_wind > 10, 10, u_wind)
+                                    u_wind = np.where(z_u_wind > 10, 10, z_u_wind)
                                     u_wind = np.where(u_wind < -10, -10, u_wind)
-                                    print(v_wind.max(), v_wind.min())
-                                    print(u_wind.max(), u_wind.min())
+                                    # print(v_wind.max(), v_wind.min())
+                                    # print(u_wind.max(), u_wind.min())
                                     
+                                    # Calculate divergence
                                     # v_wind_grad = np.array(np.gradient(v_wind)[1])
                                     # u_wind_grad = np.array(np.gradient(u_wind)[0])
                                     # wind_div = np.empty([grid_size, grid_size])
@@ -131,17 +156,25 @@ def make_wind_image():
                                         cmap = cm.coolwarm
                                         norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                        cs = ax.contourf(xi, yi, dic[key]['data'], clevs, cmap=cmap, norm=norm)
+                                        cs = ax.contourf(*xgrid, dic[key]['data'], clevs, cmap=cmap, norm=norm)
                                         cbar = plt.colorbar(cs, orientation='vertical')
                                         cbar.set_label('wind speed (m/second)')
                                         ax.set_title(key)
                                         #plt.quiver(xi, yi, u_wind, v_wind)
                                         ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
+                                        for i, val in enumerate(wind_df[key.upper()]):
+                                            ax.annotate(val, (df['LON'][i], df['LAT'][i]))
                                         plt.savefig(dic[key]['save_path'])
                                         plt.close()
 
-                                    uwind_df = pd.DataFrame(u_wind, index=np.flip(grid_lat), columns=grid_lon)
-                                    vwind_df = pd.DataFrame(v_wind, index=np.flip(grid_lat), columns=grid_lon)
+                                    uwind_df = pd.DataFrame(u_wind)
+                                    vwind_df = pd.DataFrame(v_wind)
+                                    uwind_df = uwind_df[uwind_df.columns[::-1]].T
+                                    vwind_df = vwind_df[vwind_df.columns[::-1]].T
+                                    uwind_df.columns = grid_lon
+                                    vwind_df.columns = grid_lon
+                                    uwind_df.index = grid_lat[::-1]
+                                    vwind_df.index = grid_lat[::-1]
                                     uwind_df.to_csv(save_csv_path.replace('.csv', 'U.csv'))
                                     vwind_df.to_csv(save_csv_path.replace('.csv', 'V.csv'))
                                     #save_df.to_csv(save_csv_path)
@@ -167,8 +200,8 @@ def make_abs_wind_image():
     try:
         root_folder = '../../../data/one_day_data'
 
-        for year in ['2019']:#os.listdir(root_folder):
-            for month in ['10', '11']:#os.listdir(root_folder + f'/{year}'):
+        for year in os.listdir(root_folder):
+            for month in os.listdir(root_folder + f'/{year}'):
                 for date in os.listdir(root_folder + f'/{year}/{month}'):
                     if len(os.listdir(root_folder + f'/{year}/{month}/{date}')) > 0:
                         data_files = os.listdir(root_folder + f'/{year}/{month}/{date}')
@@ -176,20 +209,25 @@ def make_abs_wind_image():
                             path = root_folder + f'/{year}/{month}/{date}/{data_file}'
                             if os.path.exists(path):
                                 print('-'*80)
+                                print('Absolute Wind Speed')
                                 print('PATH: ', path)
                                 try:
                                     df = pd.read_csv(path, index_col=0)
                                     
                                     # Interpolate Data
                                     grid_size = 50
-                                    wind_rbfi = Rbf(df['LON'], df['LAT'], df['WS1'].values, function='gaussian')
+                                    wind_rbfi = RBFInterpolator(y=df[['LON', 'LAT']], d=df['WS1'], kernel='linear', epsilon=10)
+                                    # wind_rbfi = Rbf(df['LON'], df['LAT'], df['WS1'].values, function='linear', )
                                     
                                     grid_lon = np.round(np.linspace(120.90, 121.150, grid_size), decimals=3)
                                     grid_lat = np.round(np.linspace(14.350, 14.760, grid_size), decimals=3)
-                                    xi, yi = np.meshgrid(grid_lon, grid_lat)
-                                    
-                                    abs_wind = wind_rbfi(xi, yi)
-                                    abs_wind = np.where(abs_wind > 30, 30, abs_wind)
+                                    # xi, yi = np.meshgrid(grid_lon, grid_lat)
+                                    xgrid = np.around(np.mgrid[120.90:121.150:50j, 14.350:14.760:50j], decimals=3)
+                                    xfloat = xgrid.reshape(2, -1).T
+
+                                    z1 = wind_rbfi(xfloat)
+                                    z1 = z1.reshape(50, 50)
+                                    abs_wind = np.where(z1 > 30, 30, z1)
                                     abs_wind = np.where(abs_wind < 0, 0, abs_wind)
                                     
 
@@ -202,15 +240,16 @@ def make_abs_wind_image():
                                     gl.right_labels = False
                                     gl.top_labels = False
                                     
-                                    #clevs = [-1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1]
                                     clevs = list(range(0, 31, 2))
                                     cmap = cm.viridis
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(xi, yi, abs_wind, clevs, cmap=cmap, norm=norm)
+                                    cs = ax.contourf(*xgrid, abs_wind, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation='vertical')
                                     cbar.set_label('wind speed (meter/second)')
                                     ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
+                                    for i, val in enumerate(df['WS1']):
+                                        ax.annotate(val, (df['LON'][i], df['LAT'][i]))
 
                                     # Save Image and CSV
                                     save_path = '../../../data/abs_wind_image'
@@ -224,7 +263,10 @@ def make_abs_wind_image():
                                     
                                     plt.savefig(save_path)
 
-                                    save_df = pd.DataFrame(abs_wind, index=np.flip(grid_lat), columns=grid_lon)
+                                    save_df = pd.DataFrame(abs_wind)
+                                    save_df = save_df[save_df.columns[::-1]].T
+                                    save_df.columns = grid_lon
+                                    save_df.index = grid_lat[::-1]
                                     save_df.to_csv(save_csv_path)
                                     print('Sucessfully Saved')
 

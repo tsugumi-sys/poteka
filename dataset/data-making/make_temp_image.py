@@ -1,3 +1,15 @@
+# import cartopy.crs as ccrs
+# import cartopy.feature as cfeature
+# import matplotlib.colors as mcolors
+# import pandas as pd
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import os
+# from pykrige.ok import OrdinaryKriging
+# import pykrige.kriging_tools as kt
+# from pykrige.kriging_tools import write_asc_grid
+# from scipy.interpolate import Rbf
+# import gstools as gs
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
@@ -5,15 +17,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from pykrige.ok import OrdinaryKriging
-import pykrige.kriging_tools as kt
-from pykrige.kriging_tools import write_asc_grid
-from scipy.interpolate import Rbf
+from scipy.interpolate import Rbf, RBFInterpolator
 import gstools as gs
+from matplotlib import cm
+
+
 import random
 import requests
 import tracemalloc
-from matplotlib import cm
 import traceback
 from dotenv import load_dotenv
 from pathlib import Path
@@ -47,22 +58,33 @@ def make_temp_image():
                             path = root_folder + f'/{year}/{month}/{date}/{data_file}'
                             if os.path.exists(path):
                                 print('-'*80)
+                                print('Temperature')
                                 print('PATH: ', path)
                                 try:
                                     df = pd.read_csv(path, index_col=0)
-                                    bins = gs.standard_bins((df['LAT'], df['LON']), max_dist=np.deg2rad(0.5), latlon=True)
-                                    bin_c, vario = gs.vario_estimate((df['LAT'], df['LON']), df['AT1'], bins, latlon=True)
-                                    model = gs.Cubic(latlon=True, rescale=gs.EARTH_RADIUS, var=1, len_scale=1.0)
-                                    model.fit_variogram(bin_c, vario, nugget=False)
+                                    # bins = gs.standard_bins((df['LAT'], df['LON']), max_dist=np.deg2rad(0.5), latlon=True)
+                                    # bin_c, vario = gs.vario_estimate((df['LAT'], df['LON']), df['AT1'], bins, latlon=True)
+                                    # model = gs.Cubic(latlon=True, rescale=gs.EARTH_RADIUS, var=1, len_scale=1.0)
+                                    # model.fit_variogram(bin_c, vario, nugget=False)
+                                    # grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
+                                    # grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
+                                    # #z1, ss1 = np.round(OK.execute("grid", grid_lon, grid_lat), decimals=3)
+                                    # OK_gs = gs.krige.Ordinary(model, [df['LAT'], df['LON']], df['AT1'], exact=True)
+                                    # z1 = OK_gs.structured([grid_lat, grid_lon])
+                                    # z1 = z1[0]
+                                    # xintrip, yintrip = np.meshgrid(grid_lon, grid_lat)
+                                    rbfi = RBFInterpolator(y=df[['LON', 'LAT']], d=df['AT1'], kernel='linear', epsilon=10)
                                     grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
                                     grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
-                                    #z1, ss1 = np.round(OK.execute("grid", grid_lon, grid_lat), decimals=3)
-                                    OK_gs = gs.krige.Ordinary(model, [df['LAT'], df['LON']], df['AT1'], exact=True)
-                                    z1 = OK_gs.structured([grid_lat, grid_lon])
-                                    z1 = z1[0]
-                                    xintrip, yintrip = np.meshgrid(grid_lon, grid_lat)
+                                    # xi, yi = np.meshgrid(grid_lon, grid_lat)
+                                    xgrid = np.around(np.mgrid[120.90:121.150:50j, 14.350:14.760:50j], decimals=3)
+                                    xfloat = xgrid.reshape(2, -1).T
+
+                                    z1 = rbfi(xfloat)
+                                    z1 = z1.reshape(50, 50)
                                     temp_data = np.where(z1 > 10, z1, 10)
                                     temp_data = np.where(z1 > 45, 45, temp_data)
+
                                     fig = plt.figure(figsize=(8, 8))
                                     ax = plt.axes(projection=ccrs.PlateCarree())
                                     ax.set_extent([120.90, 121.150, 14.350, 14.760])
@@ -72,15 +94,17 @@ def make_temp_image():
                                     gl.top_labels = False
 
 
-                                    clevs = [i for i in range(10, 46, 1)]
+                                    clevs = [i for i in range(10, 46)]
                                     
                                     cmap = cm.rainbow
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(xintrip, yintrip, temp_data, clevs, cmap=cmap, norm=norm)
+                                    cs = ax.contourf(*xgrid, temp_data, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation='vertical')
                                     cbar.set_label('°C')
                                     ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
+                                    for i, val in enumerate(df['AT1']):
+                                        ax.annotate(val, (df['LON'][i], df['LAT'][i]))
                                     ax.set_title('Temperature')
 
                                     # Save Image
@@ -94,7 +118,11 @@ def make_temp_image():
                                     save_path += '/{}'.format(data_file.replace('.csv', '.png'))
                                     plt.savefig(save_path)
                                     plt.close()
-                                    save_df = pd.DataFrame(temp_data, index=np.flip(grid_lat), columns=grid_lon)
+
+                                    save_df = pd.DataFrame(temp_data)
+                                    save_df = save_df[save_df.columns[::-1]].T
+                                    save_df.columns = grid_lon
+                                    save_df.index = grid_lat[::-1]
                                     save_df.to_csv(save_csv_path)
                                     print('Sucessfully Saved')
                                 except:

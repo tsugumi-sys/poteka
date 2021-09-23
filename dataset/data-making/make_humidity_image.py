@@ -1,3 +1,16 @@
+# import cartopy.crs as ccrs
+# import cartopy.feature as cfeature
+# import matplotlib.colors as mcolors
+# import pandas as pd
+# import numpy as np
+# import matplotlib.pyplot as plt
+# import os
+# from pykrige.ok import OrdinaryKriging
+# import pykrige.kriging_tools as kt
+# from pykrige.kriging_tools import write_asc_grid
+# from scipy.interpolate import Rbf
+# import gstools as gs
+
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
@@ -5,17 +18,16 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from pykrige.ok import OrdinaryKriging
-import pykrige.kriging_tools as kt
-from pykrige.kriging_tools import write_asc_grid
-from scipy.interpolate import Rbf
+from scipy.interpolate import Rbf, RBFInterpolator
 import gstools as gs
+from matplotlib import cm
+
 import random
 import requests
-from matplotlib import cm
 import tracemalloc
 from dotenv import load_dotenv
 from pathlib import Path
+import traceback
 
 dotenv_path = Path('../../.env')
 load_dotenv(dotenv_path=dotenv_path)
@@ -46,30 +58,22 @@ def make_humidity_image():
                             path = root_folder + f'/{year}/{month}/{date}/{data_file}'
                             if os.path.exists(path):
                                 print('-'*80)
+                                print('Relative Humidity')
                                 print('PATH: ', path)
                                 try:
-                                    # df = pd.read_csv(path, index_col=0)
-                                    # bins = gs.standard_bins((df['LAT'], df['LON']), max_dist=np.deg2rad(0.5), latlon=True)
-                                    # bin_c, vario = gs.vario_estimate((df['LAT'], df['LON']), df['RH1'], bins, latlon=True)
-                                    # model = gs.Cubic(latlon=True, rescale=gs.EARTH_RADIUS, var=1, len_scale=1.0)
-                                    # model.fit_variogram(bin_c, vario, nugget=False)
-                                    # grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
-                                    # grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
-                                    # #z1, ss1 = np.round(OK.execute("grid", grid_lon, grid_lat), decimals=3)
-                                    # OK_gs = gs.krige.Ordinary(model, [df['LAT'], df['LON']], df['RH1'], exact=True)
-                                    # z1 = OK_gs.structured([grid_lat, grid_lon])
-                                    # z1 = z1[0]
-                                    # xintrip, yintrip = np.meshgrid(grid_lon, grid_lat)
-
                                     df = pd.read_csv(path, index_col=0)
-                                    rbfi = Rbf(df['LON'], df['LAT'], df['RH1'], function='inverse')
+                                    rbfi = RBFInterpolator(y=df[['LON', 'LAT']], d=df['RH1'], kernel='linear', epsilon=10)
                                     grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
                                     grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
-                                    xi, yi = np.meshgrid(grid_lon, grid_lat)
-                                    z1 = rbfi(xi, yi)
-                                    
+                                    # xi, yi = np.meshgrid(grid_lon, grid_lat)
+                                    xgrid = np.around(np.mgrid[120.90:121.150:50j, 14.350:14.760:50j], decimals=3)
+                                    xfloat = xgrid.reshape(2, -1).T
+
+                                    z1 = rbfi(xfloat)
+                                    z1 = z1.reshape(50, 50)
                                     humid_data = np.where(z1 > 0, z1, 0)
                                     humid_data = np.where(humid_data > 100, 100, humid_data)
+
                                     fig = plt.figure(figsize=(7, 8), dpi=80)
                                     ax = plt.axes(projection=ccrs.PlateCarree())
                                     ax.set_extent([120.90, 121.150, 14.350, 14.760])
@@ -78,16 +82,18 @@ def make_humidity_image():
                                     gl.right_labels = False
                                     gl.top_labels = False
 
-                                    clevs = [i for i in range(0, 100, 5)]
+                                    clevs = [i for i in range(0, 101, 5)]
                                     
                                     cmap = cm.Blues
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(xi, yi, humid_data, clevs, cmap=cmap, norm=norm)
+                                    cs = ax.contourf(*xgrid, humid_data, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation='vertical')
                                     cbar.set_label('%')
                                     ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
-                                    ax.set_title('Humidity')
+                                    for i, val in enumerate(df['RH1']):
+                                        ax.annotate(val, (df['LON'][i], df['LAT'][i]))
+                                    ax.set_title('Relative Humidity')
                                     
                                     # Save Image and Csv
                                     save_path = '../../../data/humidity_image'
@@ -100,7 +106,10 @@ def make_humidity_image():
                                     save_path += '/{}'.format(data_file.replace('.csv', '.png'))
                                     plt.savefig(save_path)
 
-                                    save_df = pd.DataFrame(humid_data, index=np.flip(grid_lat), columns=grid_lon)
+                                    save_df = pd.DataFrame(humid_data)
+                                    save_df = save_df[save_df.columns[::-1]].T
+                                    save_df.columns = grid_lon
+                                    save_df.index = grid_lat[::-1]
                                     save_df.to_csv(save_csv_path)
                                     print('Sucessfully Saved')
 
@@ -108,12 +117,12 @@ def make_humidity_image():
                                 except:
                                     print('!'*10,' Failed ', '!'*10)
                                     failed_path.append(path)
+                                    print(traceback.format_exc())
                                     continue
         failed = pd.DataFrame({'path': failed_path})
         failed.to_csv('failed.csv')
         send_line_notify('Succeccfuly Completed!!!')
     except:
-        import traceback
         send_line_notify("Process has Stopped with some error!!!")
         send_line_notify(traceback.format_exc())
         print(traceback.format_exc())

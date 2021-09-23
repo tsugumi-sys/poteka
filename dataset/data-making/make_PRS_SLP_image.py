@@ -47,15 +47,16 @@ def make_prs_image():
                             path = root_folder + f'/{year}/{month}/{date}/{data_file}'
                             if os.path.exists(path):
                                 print('-'*80)
-                                print('Station Pressure', 'PATH: ', path)
+                                print('Station Pressure')
+                                print('PATH: ', path)
                                 try:
                                     df = pd.read_csv(path, index_col=0)
-                                    rbfi = RBFInterpolator(df[['LON', 'LAT']], df['PRS'], kernel='linear')
+                                    rbfi = RBFInterpolator(df[['LON', 'LAT']], df['PRS'], kernel='linear', epsilon=10)
                                     grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
                                     grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
-                                    xi, yi = np.meshgrid(grid_lon, grid_lat)
-                                    xfloat = np.mgrid[120.90:121.150:50j, 14.350:14.760:50j]
-                                    xfloat = np.around(xfloat, decimals=3).reshape(2, -1).T
+                                    # xi, yi = np.meshgrid(grid_lon, grid_lat)
+                                    xgrid = np.around(np.mgrid[120.90:121.150:50j, 14.350:14.760:50j], decimals=3)
+                                    xfloat = xgrid.reshape(2, -1).T
 
                                     z1 = rbfi(xfloat)
                                     z1 = z1.reshape(50,50)
@@ -75,10 +76,12 @@ def make_prs_image():
                                     cmap = cm.jet
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(xi, yi, humid_data, clevs, cmap=cmap, norm=norm)
+                                    cs = ax.contourf(*xgrid, humid_data, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation='vertical')
                                     cbar.set_label('hPa')
                                     ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
+                                    for i, val in enumerate(df['PRS']):
+                                        ax.annotate(val, (df['LON'][i], df['LAT'][i]))
                                     ax.set_title('Station Pressure')
                                     
                                     # Save Image and Csv
@@ -92,7 +95,10 @@ def make_prs_image():
                                     save_path += '/{}'.format(data_file.replace('.csv', '.png'))
                                     plt.savefig(save_path)
 
-                                    save_df = pd.DataFrame(humid_data, index=np.flip(grid_lat), columns=grid_lon)
+                                    save_df = pd.DataFrame(humid_data)
+                                    save_df = save_df[save_df.columns[::-1]].T
+                                    save_df.columns = grid_lon
+                                    save_df.index = grid_lat[::-1]
                                     save_df.to_csv(save_csv_path)
                                     print('Sucessfully Saved')
 
@@ -110,7 +116,7 @@ def make_prs_image():
         send_line_notify(traceback.format_exc())
         print(traceback.format_exc())
 
-# SLP: sea-level pressure
+# SLP: sea level pressure
 def make_slp_image():
     tracemalloc.start()
     failed_path = []
@@ -126,15 +132,16 @@ def make_slp_image():
                             path = root_folder + f'/{year}/{month}/{date}/{data_file}'
                             if os.path.exists(path):
                                 print('-'*80)
-                                print('Sea Level Pressure', 'PATH: ', path)
+                                print('Sea Level Pressure')
+                                print('PATH: ', path)
                                 try:
                                     df = pd.read_csv(path, index_col=0)
-                                    rbfi = RBFInterpolator(df[['LON', 'LAT']], df['SLP'], kernel='linear')
+                                    rbfi = RBFInterpolator(df[['LON', 'LAT']], df['SLP'], kernel='linear', epsilon=10)
                                     grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
                                     grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
-                                    xi, yi = np.meshgrid(grid_lon, grid_lat)
-                                    xfloat = np.mgrid[120.90:121.150:50j, 14.350:14.760:50j]
-                                    xfloat = np.around(xfloat, decimals=3).reshape(2, -1).T
+                                    # xi, yi = np.meshgrid(grid_lon, grid_lat)
+                                    xgrid = np.around(np.mgrid[120.90:121.150:50j, 14.350:14.760:50j], decimals=3)
+                                    xfloat = xgrid.reshape(2, -1).T
 
                                     z1 = rbfi(xfloat)
                                     z1 = z1.reshape(50,50)
@@ -154,10 +161,12 @@ def make_slp_image():
                                     cmap = cm.jet
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(xi, yi, humid_data, clevs, cmap=cmap, norm=norm)
+                                    cs = ax.contourf(*xgrid, humid_data, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation='vertical')
                                     cbar.set_label('hPa')
                                     ax.scatter(df['LON'], df['LAT'], marker='D', color='dimgrey')
+                                    for i, val in enumerate(df['SLP']):
+                                        ax.annotate(val, (df['LON'][i], df['LAT'][i]))
                                     ax.set_title('Sea Level Pressure')
                                     
                                     # Save Image and Csv
@@ -171,7 +180,10 @@ def make_slp_image():
                                     save_path += '/{}'.format(data_file.replace('.csv', '.png'))
                                     plt.savefig(save_path)
 
-                                    save_df = pd.DataFrame(humid_data, index=np.flip(grid_lat), columns=grid_lon)
+                                    save_df = pd.DataFrame(humid_data)
+                                    save_df = save_df[save_df.columns[::-1]].T
+                                    save_df.columns = grid_lon
+                                    save_df.index = grid_lat[::-1]
                                     save_df.to_csv(save_csv_path)
                                     print('Sucessfully Saved')
 
