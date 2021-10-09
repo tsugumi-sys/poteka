@@ -9,25 +9,23 @@ import matplotlib.pyplot as plt
 import os
 from scipy.interpolate import RBFInterpolator
 from matplotlib import cm
-import requests
 import tracemalloc
 import traceback
-from dotenv import load_dotenv
-from pathlib import Path
+from common.send_info import send_line
 
-dotenv_path = Path("../../.env")
-load_dotenv(dotenv_path=dotenv_path)
+# dotenv_path = Path("../../.env")
+# load_dotenv(dotenv_path=dotenv_path)
 
 
-def send_line_notify(notification_message):
-    """
-    LINEに通知する
-    """
-    line_notify_token = os.getenv("LINE_TOKEN")
-    line_notify_api = "https://notify-api.line.me/api/notify"
-    headers = {"Authorization": f"Bearer {line_notify_token}"}
-    data = {"message": f"message: {notification_message}"}
-    requests.post(line_notify_api, headers=headers, data=data)
+# def send_line_notify(notification_message):
+#     """
+#     LINEに通知する
+#     """
+#     line_notify_token = os.getenv("LINE_TOKEN")
+#     line_notify_api = "https://notify-api.line.me/api/notify"
+#     headers = {"Authorization": f"Bearer {line_notify_token}"}
+#     data = {"message": f"message: {notification_message}"}
+#     requests.post(line_notify_api, headers=headers, data=data)
 
 
 def calc_u_v(df, ob_point):
@@ -136,15 +134,9 @@ def make_wind_image():
                                             os.mkdir(save_path + f"/{folder}")
                                         save_path += f"/{folder}"
                                     save_csv_path = save_path + f"/{data_file}"
-                                    save_path += "/{}".format(
-                                        data_file.replace(".csv", ".png")
-                                    )
-                                    save_u_wind_fig_path = save_path.replace(
-                                        ".png", "U.png"
-                                    )
-                                    save_v_wind_fig_path = save_path.replace(
-                                        ".png", "V.png"
-                                    )
+                                    save_path += "/{}".format(data_file.replace(".csv", ".png"))
+                                    save_u_wind_fig_path = save_path.replace(".png", "U.png")
+                                    save_v_wind_fig_path = save_path.replace(".png", "V.png")
 
                                     dic = {
                                         "U-Wind": {
@@ -189,9 +181,7 @@ def make_wind_image():
                                             color="dimgrey",
                                         )
                                         for i, val in enumerate(wind_df[key.upper()]):
-                                            ax.annotate(
-                                                val, (df["LON"][i], df["LAT"][i])
-                                            )
+                                            ax.annotate(val, (df["LON"][i], df["LAT"][i]))
                                         plt.savefig(dic[key]["save_path"])
                                         plt.close()
 
@@ -203,12 +193,8 @@ def make_wind_image():
                                     vwind_df.columns = grid_lon
                                     uwind_df.index = grid_lat[::-1]
                                     vwind_df.index = grid_lat[::-1]
-                                    uwind_df.to_csv(
-                                        save_csv_path.replace(".csv", "U.csv")
-                                    )
-                                    vwind_df.to_csv(
-                                        save_csv_path.replace(".csv", "V.csv")
-                                    )
+                                    uwind_df.to_csv(save_csv_path.replace(".csv", "U.csv"))
+                                    vwind_df.to_csv(save_csv_path.replace(".csv", "V.csv"))
                                     # save_df.to_csv(save_csv_path)
                                     print("Sucessfully Saved")
                                 except:
@@ -218,10 +204,10 @@ def make_wind_image():
                                     continue
         failed = pd.DataFrame({"path": failed_path})
         failed.to_csv("failed.csv")
-        send_line_notify("Succeccfuly Completed!!!")
+        send_line("Succeccfuly Completed!!!")
     except:
-        send_line_notify("Process has Stopped with some error!!!")
-        send_line_notify(traceback.format_exc())
+        send_line("Process has Stopped with some error!!!")
+        send_line(traceback.format_exc())
         print(traceback.format_exc())
 
 
@@ -289,9 +275,7 @@ def make_abs_wind_image():
                                     cmap = cm.viridis
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(
-                                        *xgrid, abs_wind, clevs, cmap=cmap, norm=norm
-                                    )
+                                    cs = ax.contourf(*xgrid, abs_wind, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation="vertical")
                                     cbar.set_label("wind speed (meter/second)")
                                     ax.scatter(
@@ -311,9 +295,7 @@ def make_abs_wind_image():
                                             os.mkdir(save_path + f"/{folder}")
                                         save_path += f"/{folder}"
                                     save_csv_path = save_path + f"/{data_file}"
-                                    save_path += "/{}".format(
-                                        data_file.replace(".csv", ".png")
-                                    )
+                                    save_path += "/{}".format(data_file.replace(".csv", ".png"))
 
                                     plt.savefig(save_path)
 
@@ -332,10 +314,10 @@ def make_abs_wind_image():
                                     continue
         failed = pd.DataFrame({"path": failed_path})
         failed.to_csv("failed.csv")
-        send_line_notify("Succeccfuly Completed!!!")
+        send_line("Succeccfuly Completed!!!")
     except:
-        send_line_notify("Process has Stopped with some error!!!")
-        send_line_notify(traceback.format_exc())
+        send_line("Process has Stopped with some error!!!")
+        send_line(traceback.format_exc())
         print(traceback.format_exc())
 
 

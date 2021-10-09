@@ -1,5 +1,4 @@
 import os
-import requests
 import pandas as pd
 from tensorflow import keras
 import tensorflow as tf
@@ -8,25 +7,13 @@ from sklearn.model_selection import train_test_split
 import traceback
 import mlflow
 import mlflow.tensorflow
-from dotenv import load_dotenv
-from pathlib import Path
+from common.send_info import send_line
+from common.ObO_data_loader import load_selected_data
 
-from load_data import load_selected_data
+# from load_data import load_selected_data
 
 physical_devices = tf.config.experimental.list_physical_devices("GPU")
 tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
-
-dotenv_path = Path("../../.env")
-load_dotenv(dotenv_path=dotenv_path)
-
-
-def send_line(msg):
-    line_notify_token = os.getenv("LINE_TOKEN")
-    line_notify_endpoint = "https://notify-api.line.me/api/notify"
-    headers = {"Authorization": f"Bearer {line_notify_token}"}
-    data = {"message": f"message: {msg}"}
-    res = requests.post(line_notify_endpoint, headers, data)
-    return res.status_code
 
 
 def create_model(params, feature_num):

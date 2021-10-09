@@ -1,40 +1,13 @@
 import os
 import pandas as pd
-from datetime import datetime, timedelta
-
-
-def datetime_range(start, end, delta):
-    current = start
-    while current <= end:
-        yield current
-        current += delta
-
-
-def create_time_list(year, month, date):
-    dts = [
-        dt.strftime("%Y-%m-%d T%H:%M Z")
-        for dt in datetime_range(
-            datetime(year, month, date, 0),
-            datetime(year, month, date, 23, 59),
-            timedelta(minutes=2),
-        )
-    ]
-    return dts
-
-
-def make_dates(x):
-    if len(str(x)) == 2:
-        return str(x)
-    else:
-        return "0" + str(x)
+from datetime import datetime
+from common.utils import create_time_list, make_dates
 
 
 folder_path = "../../../data/accumulated-raf-data"
 
 
-ob_locations = pd.read_csv(
-    "../../../p-poteka-config/observation_point.csv", index_col="Name"
-)
+ob_locations = pd.read_csv("../../../p-poteka-config/observation_point.csv", index_col="Name")
 
 years = ["2019"]
 monthes = [
@@ -52,10 +25,7 @@ for year in years:
         for date in dates:
             count = 0
             for ob_point in os.listdir(folder_path):
-                path = (
-                    folder_path
-                    + f"/{ob_point}/{year}/{month}/{year}-{month}-{date}/data.csv"
-                )
+                path = folder_path + f"/{ob_point}/{year}/{month}/{year}-{month}-{date}/data.csv"
                 if os.path.exists(path):
                     count += 1
 
@@ -67,10 +37,7 @@ for year in years:
                 ob_names = []
                 ob_lon_lat = []
                 for ob_point in os.listdir(folder_path):
-                    path = (
-                        folder_path
-                        + f"/{ob_point}/{year}/{month}/{year}-{month}-{date}/data.csv"
-                    )
+                    path = folder_path + f"/{ob_point}/{year}/{month}/{year}-{month}-{date}/data.csv"
                     if os.path.exists(path):
                         ob_names.append(ob_point)
                         ob_df = pd.read_csv(path, index_col="Datetime")
@@ -102,10 +69,7 @@ for year in years:
                             df.loc[ob_name, col] = data.loc[time, col]
                     # print(df)
 
-                    save_path = (
-                        save_folder_path
-                        + f"/{datetime_obj.hour}-{datetime_obj.minute}.csv"
-                    )
+                    save_path = save_folder_path + f"/{datetime_obj.hour}-{datetime_obj.minute}.csv"
                     df.to_csv(save_path)
             except ValueError:
                 print(f"{year}-{month}-{date} does not exists")

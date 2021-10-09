@@ -4,32 +4,12 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-
-# from pykrige.ok import OrdinaryKriging
-# import pykrige.kriging_tools as kt
-# from pykrige.kriging_tools import write_asc_grid
 from scipy.interpolate import Rbf
 import random
-import requests
 import tracemalloc
 from PIL import Image
 from matplotlib import cm
-from dotenv import load_dotenv
-from pathlib import Path
-
-dotenv_path = Path("../../.env")
-load_dotenv(dotenv_path=dotenv_path)
-
-
-def send_line_notify(notification_message):
-    """
-    LINEに通知する
-    """
-    line_notify_token = os.getenv("LINE_TOKEN")
-    line_notify_api = "https://notify-api.line.me/api/notify"
-    headers = {"Authorization": f"Bearer {line_notify_token}"}
-    data = {"message": f"message: {notification_message}"}
-    requests.post(line_notify_api, headers=headers, data=data)
+from common.send_info import send_line
 
 
 # Rainbow Color
@@ -63,18 +43,12 @@ def make_rain_image():
                                         df["hour-rain"],
                                         function="gaussian",
                                     )
-                                    grid_lon = np.round(
-                                        np.linspace(120.90, 121.150, 50), decimals=3
-                                    )
-                                    grid_lat = np.round(
-                                        np.linspace(14.350, 14.760, 50), decimals=3
-                                    )
+                                    grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
+                                    grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
                                     xi, yi = np.meshgrid(grid_lon, grid_lat)
                                     z1 = rbfi(xi, yi)
                                     rain_data = np.where(z1 > 0, z1, 0)
-                                    rain_data = np.where(
-                                        rain_data > 100, 100, rain_data
-                                    )
+                                    rain_data = np.where(rain_data > 100, 100, rain_data)
                                     fig = plt.figure(figsize=(7, 8), dpi=80)
                                     ax = plt.axes(projection=ccrs.PlateCarree())
                                     ax.set_extent([120.90, 121.150, 14.350, 14.760])
@@ -116,30 +90,22 @@ def make_rain_image():
                                         # (0.250980406999588, 0.250980406999588, 1.0),
                                     ]
 
-                                    cmap = mcolors.ListedColormap(
-                                        cmap_data, "precipitation"
-                                    )
+                                    cmap = mcolors.ListedColormap(cmap_data, "precipitation")
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(
-                                        xi, yi, rain_data, clevs, cmap=cmap, norm=norm
-                                    )
+                                    cs = ax.contourf(xi, yi, rain_data, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation="vertical")
                                     cbar.set_label("millimeter")
 
                                     # Save Image and Csv
-                                    save_path = (
-                                        "../../../data/train_with_image/rain_image"
-                                    )
+                                    save_path = "../../../data/train_with_image/rain_image"
                                     folders = [year, month, date]
                                     for folder in folders:
                                         if not os.path.exists(save_path + f"/{folder}"):
                                             os.mkdir(save_path + f"/{folder}")
                                         save_path += f"/{folder}"
                                     # save_csv_path = save_path + f"/{data_file}"
-                                    save_path += "/{}".format(
-                                        data_file.replace(".csv", ".png")
-                                    )
+                                    save_path += "/{}".format(data_file.replace(".csv", ".png"))
                                     plt.savefig(save_path)
 
                                     im = Image.open(save_path)
@@ -157,12 +123,12 @@ def make_rain_image():
                                     continue
         failed = pd.DataFrame({"path": failed_path})
         failed.to_csv("failed.csv")
-        send_line_notify("Succeccfuly Completed!!!")
+        send_line("Succeccfuly Completed!!!")
     except:
         import traceback
 
-        send_line_notify("Process has Stopped with some error!!!")
-        send_line_notify(traceback.format_exc())
+        send_line("Process has Stopped with some error!!!")
+        send_line(traceback.format_exc())
         print(traceback.format_exc())
 
 
@@ -197,18 +163,12 @@ def make_dense_rain_image():
                                         df["hour-rain"],
                                         function="gaussian",
                                     )
-                                    grid_lon = np.round(
-                                        np.linspace(120.90, 121.150, 50), decimals=3
-                                    )
-                                    grid_lat = np.round(
-                                        np.linspace(14.350, 14.760, 50), decimals=3
-                                    )
+                                    grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
+                                    grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
                                     xi, yi = np.meshgrid(grid_lon, grid_lat)
                                     z1 = rbfi(xi, yi)
                                     rain_data = np.where(z1 > 0, z1, 0)
-                                    rain_data = np.where(
-                                        rain_data > 100, 100, rain_data
-                                    )
+                                    rain_data = np.where(rain_data > 100, 100, rain_data)
                                     fig = plt.figure(figsize=(7, 8), dpi=80)
                                     ax = plt.axes(projection=ccrs.PlateCarree())
                                     ax.set_extent([120.90, 121.150, 14.350, 14.760])
@@ -222,9 +182,7 @@ def make_dense_rain_image():
                                     cmap = cm.BuPu
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(
-                                        xi, yi, rain_data, clevs, cmap=cmap, norm=norm
-                                    )
+                                    cs = ax.contourf(xi, yi, rain_data, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation="vertical")
                                     cbar.set_label("millimeter")
 
@@ -236,9 +194,7 @@ def make_dense_rain_image():
                                             os.mkdir(save_path + f"/{folder}")
                                         save_path += f"/{folder}"
                                     # save_csv_path = save_path + f"/{data_file}"
-                                    save_path += "/{}".format(
-                                        data_file.replace(".csv", ".png")
-                                    )
+                                    save_path += "/{}".format(data_file.replace(".csv", ".png"))
                                     plt.savefig(save_path)
 
                                     im = Image.open(save_path)
@@ -256,12 +212,12 @@ def make_dense_rain_image():
                                     continue
         failed = pd.DataFrame({"path": failed_path})
         failed.to_csv("failed.csv")
-        send_line_notify("Succeccfuly Completed!!!")
+        send_line("Succeccfuly Completed!!!")
     except:
         import traceback
 
-        send_line_notify("Process has Stopped with some error!!!")
-        send_line_notify(traceback.format_exc())
+        send_line("Process has Stopped with some error!!!")
+        send_line(traceback.format_exc())
         print(traceback.format_exc())
 
 

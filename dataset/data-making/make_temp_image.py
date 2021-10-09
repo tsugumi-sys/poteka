@@ -7,25 +7,24 @@ import matplotlib.pyplot as plt
 import os
 from scipy.interpolate import RBFInterpolator
 from matplotlib import cm
-import requests
 import tracemalloc
 import traceback
-from dotenv import load_dotenv
-from pathlib import Path
-
-dotenv_path = Path("../../.env")
-load_dotenv(dotenv_path=dotenv_path)
+from common.send_info import send_line
 
 
-def send_line_notify(notification_message):
-    """
-    LINEに通知する
-    """
-    line_notify_token = os.getenv("LINE_TOKEN")
-    line_notify_api = "https://notify-api.line.me/api/notify"
-    headers = {"Authorization": f"Bearer {line_notify_token}"}
-    data = {"message": f"message: {notification_message}"}
-    requests.post(line_notify_api, headers=headers, data=data)
+# dotenv_path = Path("../../.env")
+# load_dotenv(dotenv_path=dotenv_path)
+
+
+# def send_line_notify(notification_message):
+#     """
+#     LINEに通知する
+#     """
+#     line_notify_token = os.getenv("LINE_TOKEN")
+#     line_notify_api = "https://notify-api.line.me/api/notify"
+#     headers = {"Authorization": f"Bearer {line_notify_token}"}
+#     data = {"message": f"message: {notification_message}"}
+#     requests.post(line_notify_api, headers=headers, data=data)
 
 
 def make_temp_image():
@@ -65,12 +64,8 @@ def make_temp_image():
                                         kernel="linear",
                                         epsilon=10,
                                     )
-                                    grid_lon = np.round(
-                                        np.linspace(120.90, 121.150, 50), decimals=3
-                                    )
-                                    grid_lat = np.round(
-                                        np.linspace(14.350, 14.760, 50), decimals=3
-                                    )
+                                    grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
+                                    grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
                                     # xi, yi = np.meshgrid(grid_lon, grid_lat)
                                     xgrid = np.around(
                                         np.mgrid[120.90:121.150:50j, 14.350:14.760:50j],
@@ -96,9 +91,7 @@ def make_temp_image():
                                     cmap = cm.rainbow
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(
-                                        *xgrid, temp_data, clevs, cmap=cmap, norm=norm
-                                    )
+                                    cs = ax.contourf(*xgrid, temp_data, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation="vertical")
                                     cbar.set_label("°C")
                                     ax.scatter(
@@ -119,9 +112,7 @@ def make_temp_image():
                                             os.mkdir(save_path + f"/{folder}")
                                         save_path += f"/{folder}"
                                     save_csv_path = save_path + f"/{data_file}"
-                                    save_path += "/{}".format(
-                                        data_file.replace(".csv", ".png")
-                                    )
+                                    save_path += "/{}".format(data_file.replace(".csv", ".png"))
                                     plt.savefig(save_path)
                                     plt.close()
 
@@ -138,10 +129,10 @@ def make_temp_image():
                                     continue
         failed = pd.DataFrame({"path": failed_path})
         failed.to_csv("failed.csv")
-        send_line_notify("Succeccfuly Completed!!!")
+        send_line("Creating Temperature Data Succeccfuly Completed!!!")
     except:
-        send_line_notify("Process has Stopped with some error!!!")
-        send_line_notify(traceback.format_exc())
+        send_line("Process has Stopped with some error!!!")
+        send_line(traceback.format_exc())
         print(traceback.format_exc())
 
 

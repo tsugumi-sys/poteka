@@ -7,25 +7,9 @@ import matplotlib.pyplot as plt
 import os
 from scipy.interpolate import RBFInterpolator
 from matplotlib import cm
-import requests
 import tracemalloc
-from dotenv import load_dotenv
-from pathlib import Path
 import traceback
-
-dotenv_path = Path("../../.env")
-load_dotenv(dotenv_path=dotenv_path)
-
-
-def send_line_notify(notification_message):
-    """
-    LINEに通知する
-    """
-    line_notify_token = os.getenv("LINE_TOKEN")
-    line_notify_api = "https://notify-api.line.me/api/notify"
-    headers = {"Authorization": f"Bearer {line_notify_token}"}
-    data = {"message": f"message: {notification_message}"}
-    requests.post(line_notify_api, headers=headers, data=data)
+from common.send_info import send_line
 
 
 def make_humidity_image():
@@ -53,12 +37,8 @@ def make_humidity_image():
                                         kernel="linear",
                                         epsilon=10,
                                     )
-                                    grid_lon = np.round(
-                                        np.linspace(120.90, 121.150, 50), decimals=3
-                                    )
-                                    grid_lat = np.round(
-                                        np.linspace(14.350, 14.760, 50), decimals=3
-                                    )
+                                    grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
+                                    grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
                                     # xi, yi = np.meshgrid(grid_lon, grid_lat)
                                     xgrid = np.around(
                                         np.mgrid[120.90:121.150:50j, 14.350:14.760:50j],
@@ -69,9 +49,7 @@ def make_humidity_image():
                                     z1 = rbfi(xfloat)
                                     z1 = z1.reshape(50, 50)
                                     humid_data = np.where(z1 > 0, z1, 0)
-                                    humid_data = np.where(
-                                        humid_data > 100, 100, humid_data
-                                    )
+                                    humid_data = np.where(humid_data > 100, 100, humid_data)
 
                                     fig = plt.figure(figsize=(7, 8), dpi=80)
                                     ax = plt.axes(projection=ccrs.PlateCarree())
@@ -86,9 +64,7 @@ def make_humidity_image():
                                     cmap = cm.Blues
                                     norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                                    cs = ax.contourf(
-                                        *xgrid, humid_data, clevs, cmap=cmap, norm=norm
-                                    )
+                                    cs = ax.contourf(*xgrid, humid_data, clevs, cmap=cmap, norm=norm)
                                     cbar = plt.colorbar(cs, orientation="vertical")
                                     cbar.set_label("%")
                                     ax.scatter(
@@ -109,9 +85,7 @@ def make_humidity_image():
                                             os.mkdir(save_path + f"/{folder}")
                                         save_path += f"/{folder}"
                                     save_csv_path = save_path + f"/{data_file}"
-                                    save_path += "/{}".format(
-                                        data_file.replace(".csv", ".png")
-                                    )
+                                    save_path += "/{}".format(data_file.replace(".csv", ".png"))
                                     plt.savefig(save_path)
 
                                     save_df = pd.DataFrame(humid_data)
@@ -129,10 +103,10 @@ def make_humidity_image():
                                     continue
         failed = pd.DataFrame({"path": failed_path})
         failed.to_csv("failed.csv")
-        send_line_notify("Succeccfuly Completed!!!")
+        send_line("Creating humidity Data Succeccfuly Completed!!!")
     except:
-        send_line_notify("Process has Stopped with some error!!!")
-        send_line_notify(traceback.format_exc())
+        send_line("Process has Stopped with some error!!!")
+        send_line(traceback.format_exc())
         print(traceback.format_exc())
 
 
