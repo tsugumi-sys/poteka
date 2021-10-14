@@ -1,31 +1,8 @@
 import os
 import numpy as np
 import pandas as pd
-import requests
 from tensorflow.keras.models import load_model
 from load_data import load_data_RUV
-
-# from load_image_data import load_rainbow_rain_data, load_dense_rain_data
-# import sys
-from pathlib import Path
-from dotenv import load_dotenv
-
-# PACKAGE_PARENT = "../../"
-# SCRIPT_DIR = os.path.dirname(os.path.realpath(os.path.join(os.getcwd(), os.path.expanduser(__file__))))
-# sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
-# from train_model.Models.DLWP.util import custom_load_model
-
-dotenv_path = Path("../../.env")
-load_dotenv(dotenv_path=dotenv_path)
-
-
-def send_line(msg):
-    line_notify_token = os.getenv("LINE_TOKEN")
-    line_notify_endpoint = "https://notify-api.line.me/api/notify"
-    headers = {"Authorization": f"Bearer {line_notify_token}"}
-    data = {"message": f"message: {msg}"}
-    res = requests.post(line_notify_endpoint, headers, data)
-    return res.status_code
 
 
 def rescale_arr(min_value, max_value, arr):

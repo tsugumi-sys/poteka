@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from tensorflow.keras.models import load_model
+from typing import List
 
 # from load_data import load_data
 from common.ObO_data_loader import load_valid_data
@@ -9,7 +10,7 @@ from common.send_info import send_line
 from common.utils import rescale_arr
 
 
-def save_csv(data_arr, path: str):
+def save_csv(data_arr: np.ndarray, path: str) -> None:
     grid_lon, grid_lat = np.round(np.linspace(120.90, 121.150, 50), 3), np.round(np.linspace(14.350, 14.760, 50), 3)
     df = pd.DataFrame(data_arr, index=np.flip(grid_lat), columns=grid_lon)
     df.to_csv(path)
@@ -17,9 +18,9 @@ def save_csv(data_arr, path: str):
 
 
 def make_prediction(
-    model_name="model1",
-    time_span=60,
-    params=["rain", "humidity", "temperature", "abs_wind", "seaLevel_pressure", "station_pressure", "u_wind", "v_wind"],
+    model_name: str = "model1",
+    time_span: int = 60,
+    params: List[str] = ["rain", "humidity", "temperature", "abs_wind", "seaLevel_pressure", "station_pressure", "u_wind", "v_wind"],
 ):
 
     model = load_model(f"../../../model/oneByone_model/{model_name}/model.h5")

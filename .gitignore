@@ -13,3 +13,4 @@ pyproject.toml
 .venv
 test.py
 .vscode
+log

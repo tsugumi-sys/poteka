@@ -117,7 +117,7 @@ def make_rain_image(path: str) -> None:
     grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
     grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
     xi, yi = np.meshgrid(grid_lon, grid_lat)
-    fig = plt.figure(figsize=(7, 8), dpi=80)
+    plt.figure(figsize=(7, 8), dpi=80)
     ax = plt.axes(projection=ccrs.PlateCarree())
     ax.set_extent([120.90, 121.150, 14.350, 14.760])
     ax.add_feature(cfeature.COASTLINE)

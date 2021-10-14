@@ -2,22 +2,21 @@ from dotenv import load_dotenv
 from pathlib import Path
 import requests
 import os
-from logging import getLogger, DEBUG, basicConfig
+from logging import getLogger, INFO
 from typing import Optional
 
 dotenv_path = Path(".env")
 load_dotenv(dotenv_path=dotenv_path)
 
 logger = getLogger(__name__)
-basicConfig(level=DEBUG)
-logger.setLevel(DEBUG)
+logger.setLevel(INFO)
 
 
 def send_line(msg: str) -> Optional[int]:
     line_notify_token = os.getenv("LINE_TOKEN")
 
     if line_notify_token is None:
-        logger.info("LINE TOKEN is not setted in .env file at your root directory.")
+        logger.info("FAILED to get LINE_TOKEN from env.")
         return
 
     line_notify_endpoint = "https://notify-api.line.me/api/notify"

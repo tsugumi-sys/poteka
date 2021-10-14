@@ -49,7 +49,7 @@ def make_rain_image():
                                     z1 = rbfi(xi, yi)
                                     rain_data = np.where(z1 > 0, z1, 0)
                                     rain_data = np.where(rain_data > 100, 100, rain_data)
-                                    fig = plt.figure(figsize=(7, 8), dpi=80)
+                                    plt.figure(figsize=(7, 8), dpi=80)
                                     ax = plt.axes(projection=ccrs.PlateCarree())
                                     ax.set_extent([120.90, 121.150, 14.350, 14.760])
 
@@ -169,7 +169,7 @@ def make_dense_rain_image():
                                     z1 = rbfi(xi, yi)
                                     rain_data = np.where(z1 > 0, z1, 0)
                                     rain_data = np.where(rain_data > 100, 100, rain_data)
-                                    fig = plt.figure(figsize=(7, 8), dpi=80)
+                                    plt.figure(figsize=(7, 8), dpi=80)
                                     ax = plt.axes(projection=ccrs.PlateCarree())
                                     ax.set_extent([120.90, 121.150, 14.350, 14.760])
 
