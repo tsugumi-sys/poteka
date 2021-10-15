@@ -13,7 +13,8 @@ from typing import Union
 from logging import getLogger, INFO, basicConfig, StreamHandler
 import multiprocessing
 from joblib import Parallel, delayed
-from utils import gen_data_config
+from tqdm import tqdm
+from utils import gen_data_config, tqdm_joblib
 
 sys.path.append(".")
 from common.send_info import send_line  # noqa: E402
@@ -23,10 +24,7 @@ from common.validations import is_ymd_valid  # noqa: E402
 logger = getLogger(__name__)
 logger.setLevel(INFO)
 basicConfig(
-    level=INFO,
-    filename="./dataset/data-making/log/create_humidity_data.log",
-    filemode="w",
-    format="%(asctime)s %(levelname)s %(name)s :%(message)s",
+    level=INFO, filename="./dataset/data-making/log/create_humidity_data.log", filemode="w", format="%(asctime)s %(levelname)s %(name)s :%(message)s",
 )
 logger.addHandler(StreamHandler(sys.stdout))
 
@@ -53,19 +51,11 @@ def make_img(
     if is_data_file_exists and is_save_dir_exists and is_ymd_valid(year, month, date, data_file_path):
         try:
             df = pd.read_csv(data_file_path, index_col=0)
-            rbfi = RBFInterpolator(
-                y=df[["LON", "LAT"]],
-                d=df["RH1"],
-                kernel="linear",
-                epsilon=10,
-            )
+            rbfi = RBFInterpolator(y=df[["LON", "LAT"]], d=df["RH1"], kernel="linear", epsilon=10,)
             grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
             grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
             # xi, yi = np.meshgrid(grid_lon, grid_lat)
-            xgrid = np.around(
-                np.mgrid[120.90:121.150:50j, 14.350:14.760:50j],
-                decimals=3,
-            )
+            xgrid = np.around(np.mgrid[120.90:121.150:50j, 14.350:14.760:50j], decimals=3,)
             xfloat = xgrid.reshape(2, -1).T
 
             z1 = rbfi(xfloat)
@@ -90,10 +80,7 @@ def make_img(
             cbar = plt.colorbar(cs, orientation="vertical")
             cbar.set_label("%")
             ax.scatter(
-                df["LON"],
-                df["LAT"],
-                marker="D",
-                color="dimgrey",
+                df["LON"], df["LAT"], marker="D", color="dimgrey",
             )
             for i, val in enumerate(df["RH1"]):
                 ax.annotate(val, (df["LON"][i], df["LAT"][i]))
@@ -131,17 +118,11 @@ def make_img(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="process humidity data.")
     parser.add_argument(
-        "--data_root_path",
-        type=str,
-        default="../../../data",
-        help="The root path of the data directory.",
+        "--data_root_path", type=str, default="../../../data", help="The root path of the data directory.",
     )
 
     parser.add_argument(
-        "--n_jobs",
-        type=int,
-        default=1,
-        help="The number of cpus to use.",
+        "--n_jobs", type=int, default=1, help="The number of cpus to use.",
     )
 
     args = parser.parse_args()
@@ -154,16 +135,17 @@ if __name__ == "__main__":
     if n_jobs > max_cores:
         n_jobs = max_cores
 
-    Parallel(n_jobs=n_jobs)(
-        delayed(make_img)(
-            data_file_path=conf["data_file_path"],
-            csv_file_name=conf["csv_file_name"],
-            save_dir_path=conf["save_dir_path"],
-            year=conf["year"],
-            month=conf["month"],
-            date=conf["date"],
+    with tqdm_joblib(tqdm(desc="Create humidity data", total=len(confs))):
+        Parallel(n_jobs=n_jobs)(
+            delayed(make_img)(
+                data_file_path=conf["data_file_path"],
+                csv_file_name=conf["csv_file_name"],
+                save_dir_path=conf["save_dir_path"],
+                year=conf["year"],
+                month=conf["month"],
+                date=conf["date"],
+            )
+            for conf in confs
         )
-        for conf in confs[:10]
-    )
 
     send_line("Creating humidity data has finished.")

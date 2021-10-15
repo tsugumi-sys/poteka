@@ -15,7 +15,8 @@ from typing import Union
 from logging import getLogger, INFO, basicConfig, StreamHandler
 import multiprocessing
 from joblib import Parallel, delayed
-from utils import gen_data_config
+from tqdm import tqdm
+from utils import gen_data_config, tqdm_joblib
 
 sys.path.append(".")
 from common.send_info import send_line  # noqa: E402
@@ -25,10 +26,7 @@ from common.validations import is_ymd_valid  # noqa: E402
 logger = getLogger(__name__)
 logger.setLevel(INFO)
 basicConfig(
-    level=INFO,
-    filename="./dataset/data-making/log/create_wind_data.log",
-    filemode="w",
-    format="%(asctime)s %(levelname)s %(name)s :%(message)s",
+    level=INFO, filename="./dataset/data-making/log/create_wind_data.log", filemode="w", format="%(asctime)s %(levelname)s %(name)s :%(message)s",
 )
 logger.addHandler(StreamHandler(sys.stdout))
 
@@ -57,10 +55,7 @@ def make_abs_img(
     date: Union[str, int],
 ) -> None:
     basicConfig(
-        level=INFO,
-        filename="./dataset/data-making/log/create_wind_data.log",
-        filemode="a",
-        format="%(asctime)s %(levelname)s %(name)s :%(message)s",
+        level=INFO, filename="./dataset/data-making/log/create_wind_data.log", filemode="a", format="%(asctime)s %(levelname)s %(name)s :%(message)s",
     )
 
     img_title = "wind speed (meter/second)"
@@ -73,26 +68,12 @@ def make_abs_img(
 
             # Interpolate Data
             grid_size = 50
-            wind_rbfi = RBFInterpolator(
-                y=df[["LON", "LAT"]],
-                d=df["WS1"],
-                kernel="linear",
-                epsilon=10,
-            )
+            wind_rbfi = RBFInterpolator(y=df[["LON", "LAT"]], d=df["WS1"], kernel="linear", epsilon=10,)
 
-            grid_lon = np.round(
-                np.linspace(120.90, 121.150, grid_size),
-                decimals=3,
-            )
-            grid_lat = np.round(
-                np.linspace(14.350, 14.760, grid_size),
-                decimals=3,
-            )
+            grid_lon = np.round(np.linspace(120.90, 121.150, grid_size), decimals=3,)
+            grid_lat = np.round(np.linspace(14.350, 14.760, grid_size), decimals=3,)
             # xi, yi = np.meshgrid(grid_lon, grid_lat)
-            xgrid = np.around(
-                np.mgrid[120.90:121.150:50j, 14.350:14.760:50j],
-                decimals=3,
-            )
+            xgrid = np.around(np.mgrid[120.90:121.150:50j, 14.350:14.760:50j], decimals=3,)
             xfloat = xgrid.reshape(2, -1).T
 
             z1 = wind_rbfi(xfloat)
@@ -117,10 +98,7 @@ def make_abs_img(
             cbar = plt.colorbar(cs, orientation="vertical")
             cbar.set_label(img_title)
             ax.scatter(
-                df["LON"],
-                df["LAT"],
-                marker="D",
-                color="dimgrey",
+                df["LON"], df["LAT"], marker="D", color="dimgrey",
             )
             for i, val in enumerate(df["WS1"]):
                 ax.annotate(val, (df["LON"][i], df["LAT"][i]))
@@ -164,10 +142,7 @@ def make_uv_img(
     date: Union[str, int],
 ) -> None:
     basicConfig(
-        level=INFO,
-        filename="./dataset/data-making/log/create_wind_data.log",
-        filemode="a",
-        format="%(asctime)s %(levelname)s %(name)s :%(message)s",
+        level=INFO, filename="./dataset/data-making/log/create_wind_data.log", filemode="a", format="%(asctime)s %(levelname)s %(name)s :%(message)s",
     )
 
     img_title = "wind speed (m/second)"
@@ -177,40 +152,18 @@ def make_uv_img(
     if is_data_file_exists and is_save_dir_exists and is_ymd_valid(year, month, date, data_file_path):
         try:
             df = pd.read_csv(data_file_path, index_col=0)
-            wind_df = pd.DataFrame(
-                [calc_u_v(df.loc[i, :], i) for i in df.index],
-                columns=["OB-POINT", "U-WIND", "V-WIND"],
-            )
+            wind_df = pd.DataFrame([calc_u_v(df.loc[i, :], i) for i in df.index], columns=["OB-POINT", "U-WIND", "V-WIND"],)
             wind_df = wind_df.set_index("OB-POINT")
             wind_df["LON"] = df["LON"]
             wind_df["LAT"] = df["LAT"]
             grid_size = 50
-            v_wind_rbfi = RBFInterpolator(
-                y=wind_df[["LON", "LAT"]],
-                d=wind_df["V-WIND"],
-                kernel="linear",
-                epsilon=10,
-            )
-            u_wind_rbfi = RBFInterpolator(
-                y=wind_df[["LON", "LAT"]],
-                d=wind_df["U-WIND"],
-                kernel="linear",
-                epsilon=10,
-            )
+            v_wind_rbfi = RBFInterpolator(y=wind_df[["LON", "LAT"]], d=wind_df["V-WIND"], kernel="linear", epsilon=10,)
+            u_wind_rbfi = RBFInterpolator(y=wind_df[["LON", "LAT"]], d=wind_df["U-WIND"], kernel="linear", epsilon=10,)
 
-            grid_lon = np.round(
-                np.linspace(120.90, 121.150, grid_size),
-                decimals=3,
-            )
-            grid_lat = np.round(
-                np.linspace(14.350, 14.760, grid_size),
-                decimals=3,
-            )
+            grid_lon = np.round(np.linspace(120.90, 121.150, grid_size), decimals=3,)
+            grid_lat = np.round(np.linspace(14.350, 14.760, grid_size), decimals=3,)
             # xi, yi = np.meshgrid(grid_lon, grid_lat)
-            xgrid = np.around(
-                np.mgrid[120.90:121.150:50j, 14.350:14.760:50j],
-                decimals=3,
-            )
+            xgrid = np.around(np.mgrid[120.90:121.150:50j, 14.350:14.760:50j], decimals=3,)
             xfloat = xgrid.reshape(2, -1).T
 
             z_v_wind = v_wind_rbfi(xfloat)
@@ -255,14 +208,8 @@ def make_uv_img(
             save_v_wind_fig_path = save_path.replace(".png", "V.png")
 
             dic = {
-                "U-Wind": {
-                    "save_path": save_u_wind_fig_path,
-                    "data": u_wind,
-                },
-                "V-Wind": {
-                    "save_path": save_v_wind_fig_path,
-                    "data": v_wind,
-                },
+                "U-Wind": {"save_path": save_u_wind_fig_path, "data": u_wind,},
+                "V-Wind": {"save_path": save_v_wind_fig_path, "data": v_wind,},
             }
 
             for key in list(dic.keys()):
@@ -279,22 +226,13 @@ def make_uv_img(
                 cmap = cm.coolwarm
                 norm = mcolors.BoundaryNorm(clevs, cmap.N)
 
-                cs = ax.contourf(
-                    *xgrid,
-                    dic[key]["data"],
-                    clevs,
-                    cmap=cmap,
-                    norm=norm,
-                )
+                cs = ax.contourf(*xgrid, dic[key]["data"], clevs, cmap=cmap, norm=norm,)
                 cbar = plt.colorbar(cs, orientation="vertical")
                 cbar.set_label(img_title)
                 ax.set_title(key)
                 # plt.quiver(xi, yi, u_wind, v_wind)
                 ax.scatter(
-                    df["LON"],
-                    df["LAT"],
-                    marker="D",
-                    color="dimgrey",
+                    df["LON"], df["LAT"], marker="D", color="dimgrey",
                 )
                 for i, val in enumerate(wind_df[key.upper()]):
                     ax.annotate(val, (df["LON"][i], df["LAT"][i]))
@@ -325,24 +263,15 @@ def make_uv_img(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="process humidity data.")
     parser.add_argument(
-        "--data_root_path",
-        type=str,
-        default="../../../data",
-        help="The root path of the data directory.",
+        "--data_root_path", type=str, default="../../../data", help="The root path of the data directory.",
     )
 
     parser.add_argument(
-        "--n_jobs",
-        type=int,
-        default=1,
-        help="The number of cpus to use.",
+        "--n_jobs", type=int, default=1, help="The number of cpus to use.",
     )
 
     parser.add_argument(
-        "--target",
-        type=str,
-        default="abs",
-        help="Taget name (abs or uv).",
+        "--target", type=str, default="abs", help="Taget name (abs or uv).",
     )
 
     args = parser.parse_args()
@@ -352,7 +281,7 @@ if __name__ == "__main__":
     if target not in ["abs", "uv"]:
         logger.error('--target shoud be "abs" or "uv"')
     else:
-        save_dir_name = "abs_wind_image" if target == "abs" else "uv_wind_image"
+        save_dir_name = "abs_wind_image" if target == "abs" else "wind_image"
         confs = gen_data_config(data_root_path=args.data_root_path, save_dir_name=save_dir_name)
         n_jobs = args.n_jobs
 
@@ -361,28 +290,30 @@ if __name__ == "__main__":
             n_jobs = max_cores
 
         if target == "abs":
-            Parallel(n_jobs=n_jobs)(
-                delayed(make_abs_img)(
-                    data_file_path=conf["data_file_path"],
-                    csv_file_name=conf["csv_file_name"],
-                    save_dir_path=conf["save_dir_path"],
-                    year=conf["year"],
-                    month=conf["month"],
-                    date=conf["date"],
+            with tqdm_joblib(tqdm(desc="Create abs wind data", total=len(confs))):
+                Parallel(n_jobs=n_jobs)(
+                    delayed(make_abs_img)(
+                        data_file_path=conf["data_file_path"],
+                        csv_file_name=conf["csv_file_name"],
+                        save_dir_path=conf["save_dir_path"],
+                        year=2013,
+                        month=conf["month"],
+                        date=conf["date"],
+                    )
+                    for conf in confs
                 )
-                for conf in confs
-            )
         else:
-            Parallel(n_jobs=n_jobs)(
-                delayed(make_uv_img)(
-                    data_file_path=conf["data_file_path"],
-                    csv_file_name=conf["csv_file_name"],
-                    save_dir_path=conf["save_dir_path"],
-                    year=conf["year"],
-                    month=conf["month"],
-                    date=conf["date"],
+            with tqdm_joblib(tqdm(desc="Create uv wind data.", total=len(confs))):
+                Parallel(n_jobs=n_jobs)(
+                    delayed(make_uv_img)(
+                        data_file_path=conf["data_file_path"],
+                        csv_file_name=conf["csv_file_name"],
+                        save_dir_path=conf["save_dir_path"],
+                        year=conf["year"],
+                        month=conf["month"],
+                        date=conf["date"],
+                    )
+                    for conf in confs
                 )
-                for conf in confs
-            )
 
         send_line("Creating wind data has finished.")
