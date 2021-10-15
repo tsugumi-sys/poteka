@@ -1,11 +1,12 @@
-from typing import Tuple, List
+from typing import Dict, Tuple, List
 import pandas as pd
 import numpy as np
 import os
 import tracemalloc
 import sys
-import tensorflow as tf
-import random as rd
+
+# import tensorflow as tf
+# import random as rd
 from common.utils import create_time_list, log_memory, get_param_path, load_csv_data, chack_data_scale, csv_list
 
 
@@ -230,124 +231,183 @@ def load_selected_data(params: List[str] = ["rain", "humidity", "temperature", "
     return input_arr, label_arr
 
 
-def get_data_paths(params=["rain", "station_pressure", "seaLevel_pressure"]):
+def load_valid_data(params: List[str] = ["rain", "humidity", "temperature", "wind"]) -> Tuple[np.ndarray, np.ndarray, Dict]:
+    tracemalloc.start()
 
-    year = 2020
+    time_list = create_time_list()
 
-    csv_files = csv_list(2020, 1, 1)
-    train_list = pd.read_csv("../train_data_list.csv", index_col="date")
-
-    # paths - date_count - each time id - paths of each parameters
-    paths = {}
-    for date in train_list.index:
-        month = date.split("-")[1]
-        params_path = {}
-        if len(params) > 0:
-            for par in params:
-                params_path[par] = get_param_path(param_name=par, year=year, month=month, date=date)
-
-        start, end = train_list.loc[date, "start"], train_list.loc[date, "end"]
-        idx_start, idx_end = csv_files.index(str(start)), csv_files.index(str(end))
-        idx_start = idx_start - 12 if idx_start > 11 else 0
-        idx_end = idx_end + 12 if idx_end < 132 else 143
-
-        count = 1
-        for i in range(idx_start, idx_end - 12, 3):
-            next_i = i + 12
-            file_names = csv_files[i:next_i]
-            sub_paths = {}
-            for file_name in file_names:
-                sub_paths[file_name] = {}
-                for par in params:
-                    if "wind" in par and par != "abs_wind":
-                        sub_paths[file_name]["u_wind"] = params_path[par] + f"/{file_name}".replace(".csv", "U.csv")
-                        sub_paths[file_name]["v_wind"] = params_path[par] + f"/{file_name}".replace(".csv", "V.csv")
-
-                    else:
-                        sub_paths[file_name][par] = params_path[par] + f"/{file_name}"
-
-                paths[f"{date}_{count}"] = sub_paths
-                count += 1
-    return paths
-
-
-def load_data_from_paths(paths):
-    # paths: dict
-    # key0: day and count (e.g. 2021-01-01_55)
-    # key1: time_id (12 items e.g. 6-10.csv)
-    # key2: parameter names
     input_arr = []
     label_arr = []
-    for date_count in paths:
-        subset_arrs = []
-        for time_id in paths[date_count]:
-            params_data = {}
-            # Load data
-            for par in paths[date_count][time_id].keys():
-                params_data[par] = load_csv_data(paths[date_count][time_id][par])
 
-            # Check if data is valid
-            for key in params_data.keys():
-                if not chack_data_scale(params_data[key]):
-                    print(paths[date_count][time_id][par], " Has invalid scale.(x > 1 or x < 0)")
-                    sys.exit()
+    year = 2019
+    monthes = ["10", "11"]
+    dates_list = []
+    time_set = []
 
-            subset_arr = np.empty([50, 50, len(params_data.keys())])
-            for i in range(50):
-                for j in range(50):
-                    for k, key in enumerate(params_data.keys()):
-                        subset_arr[i, j, k] = params_data[key][i, j]
+    for month in monthes:
+        log_memory()
+        dates = os.listdir(f"../../../data/rain_image/{year}/{month}")
+        dates_list.append(dates)
 
-            subset_arrs.append(subset_arr)
+        for date in dates:
+            print("... Loading", date)
+            params_path = {}
+            if len(params) > 0:
+                for par in params:
+                    params_path[par] = get_param_path(param_name=par, year=year, month=month, date=date)
 
-        input_arr.append(subset_arrs[:6])
-        label_arr.append(subset_arrs[6])
+            time_subset = []
+            for step in range(0, len(time_list) - 6, 6):
+                next_step = step + 12
+                file_names = [f"{dt.hour}-{dt.minute}.csv" for dt in time_list[step:next_step]]
+                time_subset.append(file_names[6:])
+
+                subset_arrs = []
+                for file_name in file_names:
+                    params_data = {}
+                    # Load data
+                    for par in params:
+                        if "wind" in par and par != "abs_wind":
+                            params_data["u_wind"] = load_csv_data(params_path[par] + f"/{file_name}".replace(".csv", "U.csv"))
+                            params_data["v_wind"] = load_csv_data(params_path[par] + f"/{file_name}".replace(".csv", "V.csv"))
+
+                        else:
+                            params_data[par] = load_csv_data(params_path[par] + f"/{file_name}")
+
+                    # Check if data is valid
+                    for key in params_data.keys():
+                        if not chack_data_scale(params_data[key]):
+                            print(year, month, date, file_name, key, " Has invalid scale.(x > 1 or x < 0)")
+                            sys.exit()
+
+                    subset_arr = np.empty([50, 50, len(params_data.keys())])
+                    for i in range(50):
+                        for j in range(50):
+                            for k, key in enumerate(params_data.keys()):
+                                subset_arr[i, j, k] = params_data[key][i, j]
+
+                    subset_arrs.append(subset_arr)
+
+                input_arr.append(subset_arrs[:6])
+                label_arr.append(subset_arrs[6:])
+        time_set.append(time_subset)
 
     input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, len(params_data.keys())])
-    label_arr = np.array(label_arr).reshape([len(label_arr), 50, 50, len(params_data.keys())])
+    label_arr = np.array(label_arr).reshape([len(label_arr), 6, 50, 50, len(params_data.keys())])
 
-    return input_arr, label_arr
+    data_config = {"year": year, "monthes": monthes, "dates": dates_list, "time": time_set}
 
-
-def train_data_generator(paths, batch_size=16):
-    # get keys
-    keys = [*paths.keys()]
-
-    # Custom butch
-    file_of_dataset = tf.data.Dataset.from_tensor_slices(keys)
-    batched_file = file_of_dataset.batch(batch_size)
-
-    for batched_keys in batched_file.take(batch_size):
-        batched_keys = [i.decode("UTF-8") for i in batched_keys.numpy().tolist()]
-        input_arr, label_arr = load_data_from_paths(dict((key, paths[key]) for key in batched_keys))
-        yield input_arr, label_arr
+    return input_arr, label_arr, data_config
 
 
-def get_train_valid_paths(params=["rain", "humidity", "temperature", "abs_wind", "seaLevel_pressure"]):
-    print("[INFO] Load data paths  ...")
-    # Load data files
-    data_paths = get_data_paths(params)
-    # Suffle keys
-    keys = [*data_paths.keys()]
-    rd.shuffle(keys)
+# def get_data_paths(params: List[str] = ["rain", "station_pressure", "seaLevel_pressure"]) -> Dict:
 
-    split_length = len(keys) // 5
+#     year = 2020
 
-    train_paths = dict((key, data_paths[key]) for key in keys[split_length:])
-    valid_paths = dict((key, data_paths[key]) for key in keys[:split_length])
-    return train_paths, valid_paths
+#     csv_files = csv_list(2020, 1, 1)
+#     train_list = pd.read_csv("../train_data_list.csv", index_col="date")
+
+#     # paths - date_count - each time id - paths of each parameters
+#     paths = {}
+#     for date in train_list.index:
+#         month = date.split("-")[1]
+#         params_path = {}
+#         if len(params) > 0:
+#             for par in params:
+#                 params_path[par] = get_param_path(param_name=par, year=year, month=month, date=date)
+
+#         start, end = train_list.loc[date, "start"], train_list.loc[date, "end"]
+#         idx_start, idx_end = csv_files.index(str(start)), csv_files.index(str(end))
+#         idx_start = idx_start - 12 if idx_start > 11 else 0
+#         idx_end = idx_end + 12 if idx_end < 132 else 143
+
+#         count = 1
+#         for i in range(idx_start, idx_end - 12, 3):
+#             next_i = i + 12
+#             file_names = csv_files[i:next_i]
+#             sub_paths = {}
+#             for file_name in file_names:
+#                 sub_paths[file_name] = {}
+#                 for par in params:
+#                     if "wind" in par and par != "abs_wind":
+#                         sub_paths[file_name]["u_wind"] = params_path[par] + f"/{file_name}".replace(".csv", "U.csv")
+#                         sub_paths[file_name]["v_wind"] = params_path[par] + f"/{file_name}".replace(".csv", "V.csv")
+
+#                     else:
+#                         sub_paths[file_name][par] = params_path[par] + f"/{file_name}"
+
+#                 paths[f"{date}_{count}"] = sub_paths
+#                 count += 1
+#     return paths
 
 
-def load_valid_data(paths):
-    print("[INFO] Load Validation data ...")
-    return load_data_from_paths(paths)
+# def load_data_from_paths(paths: Dict) -> Tuple[np.ndarray, np.ndarray]:
+#     # paths: dict
+#     # key0: day and count (e.g. 2021-01-01_55)
+#     # key1: time_id (12 items e.g. 6-10.csv)
+#     # key2: parameter names
+#     input_arr = []
+#     label_arr = []
+#     for date_count in paths:
+#         subset_arrs = []
+#         for time_id in paths[date_count]:
+#             params_data = {}
+#             # Load data
+#             for par in paths[date_count][time_id].keys():
+#                 params_data[par] = load_csv_data(paths[date_count][time_id][par])
+
+#             # Check if data is valid
+#             for key in params_data.keys():
+#                 if not chack_data_scale(params_data[key]):
+#                     print(paths[date_count][time_id][par], " Has invalid scale.(x > 1 or x < 0)")
+#                     sys.exit()
+
+#             subset_arr = np.empty([50, 50, len(params_data.keys())])
+#             for i in range(50):
+#                 for j in range(50):
+#                     for k, key in enumerate(params_data.keys()):
+#                         subset_arr[i, j, k] = params_data[key][i, j]
+
+#             subset_arrs.append(subset_arr)
+
+#         input_arr.append(subset_arrs[:6])
+#         label_arr.append(subset_arrs[6])
+
+#     input_arr = np.array(input_arr).reshape([len(input_arr), 6, 50, 50, len(params_data.keys())])
+#     label_arr = np.array(label_arr).reshape([len(label_arr), 50, 50, len(params_data.keys())])
+
+#     return input_arr, label_arr
 
 
-if __name__ == "__main__":
-    tracemalloc.start()
-    log_memory()
-    train_paths, valid_paths = get_train_valid_paths(params=["rain", "humidity", "temperature", "abs_wind", "seaLevel_pressure"])
-    log_memory()
-    X_valid, y_valid = load_valid_data(valid_paths)
-    log_memory()
-    # train_data_generator(train_paths)
+# def train_data_generator(paths, batch_size=16):
+#     # get keys
+#     keys = [*paths.keys()]
+
+#     # Custom butch
+#     file_of_dataset = tf.data.Dataset.from_tensor_slices(keys)
+#     batched_file = file_of_dataset.batch(batch_size)
+
+#     for batched_keys in batched_file.take(batch_size):
+#         batched_keys = [i.decode("UTF-8") for i in batched_keys.numpy().tolist()]
+#         input_arr, label_arr = load_data_from_paths(dict((key, paths[key]) for key in batched_keys))
+#         yield input_arr, label_arr
+
+
+# def get_train_valid_paths(params: List[str] = ["rain", "humidity", "temperature", "abs_wind", "seaLevel_pressure"]) -> Tuple[Dict, Dict]:
+#     print("[INFO] Load data paths  ...")
+#     # Load data files
+#     data_paths = get_data_paths(params)
+#     # Suffle keys
+#     keys = [*data_paths.keys()]
+#     rd.shuffle(keys)
+
+#     split_length = len(keys) // 5
+
+#     train_paths = dict((key, data_paths[key]) for key in keys[split_length:])
+#     valid_paths = dict((key, data_paths[key]) for key in keys[:split_length])
+#     return train_paths, valid_paths
+
+
+# def load_valid_data(paths: Dict) -> Tuple[np.ndarray, np.ndarray]:
+#     print("[INFO] Load Validation data ...")
+#     return load_data_from_paths(paths)

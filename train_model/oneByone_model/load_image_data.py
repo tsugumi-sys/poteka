@@ -21,20 +21,19 @@
 #     print(format_bytes(size))
 
 
-
 # # return: ndarray
 # def load_image_data(path: str):
 #     image = Image.open(path)
 #     image = image.resize((36, 60))
 #     image = image.convert('RGB')
-#     return np.asarray(image) / 255  #(np.asarray(image) - 128)/128 
+#     return np.asarray(image) / 255  #(np.asarray(image) - 128)/128
 
 # def datetime_range(start, end, delta):
 #     current = start
 #     while current <= end:
 #         yield current
 #         current += delta
-        
+
 # def create_time_list(year=2020, month=1, date=1):
 #     dts = [dt for dt in datetime_range(datetime(year, month, date, 0), datetime(year, month, date, 23, 59), timedelta(minutes=10))]
 #     return dts
@@ -69,17 +68,17 @@
 #                         for step in range(0, len(time_list) - 9, 3):
 #                             file_names = [f'{dt.hour}-{dt.minute}croped.png' for dt in time_list[step:step+12]]
 #                             time_subset.append(file_names[6:])
-                            
+
 #                             subset_arrs = []
 #                             for file_name in file_names:
 #                                 # Load data
 #                                 file_path = path + f'/{file_name}'
-                                
+
 #                                 # Create ndarray
 #                                 img_arr = load_image_data(file_path)
 #                                 #print(img_arr.max(), img_arr.min())
 #                                 subset_arrs.append(img_arr)
-                            
+
 #                             input_arr.append(subset_arrs[:6])
 #                             label_arr.append(subset_arrs[6:])
 #                 time_set.append(time_subset)
@@ -126,16 +125,16 @@
 #                         for step in range(0, len(time_list) - 9, 3):
 #                             file_names = [f'{dt.hour}-{dt.minute}croped.png' for dt in time_list[step:step+12]]
 #                             time_subset.append(file_names[6:])
-                            
+
 #                             subset_arrs = []
 #                             for file_name in file_names:
 #                                 # Load data
 #                                 file_path = path + f'/{file_name}'
-                                
+
 #                                 # Create ndarray
 #                                 img_arr = load_image_data(file_path)
 #                                 subset_arrs.append(img_arr)
-                            
+
 #                             input_arr.append(subset_arrs[:6])
 #                             label_arr.append(subset_arrs[6:])
 #                 time_set.append(time_subset)
@@ -152,7 +151,6 @@
 #     }
 
 #     return input_arr, label_arr, data_config
-
 
 
 # if __name__ == '__main__':

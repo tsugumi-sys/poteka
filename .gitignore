@@ -8,3 +8,9 @@
 __pycache__
 .ipynb_checkpoints
 mlruns
+pyproject.toml
+*.lock
+.venv
+test.py
+.vscode
+log

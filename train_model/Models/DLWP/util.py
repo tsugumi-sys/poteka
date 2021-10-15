@@ -1,13 +1,11 @@
 from tensorflow.keras import models as keras_models
-from copy import copy
-import re
 from importlib import import_module
-import numpy as np
-import pandas as pd
 from .custom import PeriodicPadding3D
+
 # ============================================
 # General utility functions
 # ============================================
+
 
 def get_object(module_class):
     """
@@ -15,7 +13,7 @@ def get_object(module_class):
 
     """
     # Split the path into its parts
-    parts = module_class.split('.')
+    parts = module_class.split(".")
     # Get the top level module
     module = parts[0]
     # Import the top level module
@@ -24,7 +22,7 @@ def get_object(module_class):
     # Be prepared to catch an exception if something cannot be found.
     try:
         for part in parts:
-            module = '.'.join([module, part])
+            module = ".".join([module, part])
             # Import each successive module
             __import__(module)
             mod = getattr(mod, part)
@@ -34,8 +32,9 @@ def get_object(module_class):
     except AttributeError:
         # Can't fint the last attribute. Give a more informative error message:
         raise AttributeError("Module: '%s' has no attribute '%s' when searching for '%s'" % (mod.__name__, part, module_class))
-    
+
     return mod
+
 
 def get_from_class(module_name, class_name):
     """
@@ -82,9 +81,7 @@ def get_methods(module_name):
 
 
 def custom_load_model(file_path):
-    custom_objects = {
-        'PeriodicPadding3D': PeriodicPadding3D
-    }
+    custom_objects = {"PeriodicPadding3D": PeriodicPadding3D}
     # custom_objects.update(get_classes('.custom'))
     # custom_objects.update(get_methods('.custom'))
     loaded_model = keras_models.load_model(file_path, custom_objects=custom_objects)

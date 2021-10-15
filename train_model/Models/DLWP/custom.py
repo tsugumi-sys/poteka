@@ -1,27 +1,17 @@
-import tensorflow
-from tensorflow.compat.v1 import keras as tfk
-from tensorflow import cast
-from tensorflow.keras.callbacks import Callback, EarlyStopping
-from tensorflow.keras.layers import ZeroPadding2D, ZeroPadding3D, LocallyConnected2D, Lambda, Layer, InputSpec, concatenate
-from tensorflow.keras.losses import mean_absolute_error, mean_squared_error
-from tensorflow.python.keras.utils import conv_utils
-#import tensorflow.keras.utils as conv_utils
-#from tensorflow.python.keras.engine.base_layer import InputSec
-from tensorflow.keras import activations, initializers, regularizers, constraints#
-import numpy as np
+from tensorflow.keras.layers import ZeroPadding2D, ZeroPadding3D, concatenate
 
 
 # ================================= #
 # Keras padding layers
 # ================================= #
 class PeriodicPadding2D(ZeroPadding2D):
-    """ Periodic-padding layer for 2D input (e.g. image).
+    """Periodic-padding layer for 2D input (e.g. image).
 
     This layer can add periodic rows and columns at the top, bottom, left, right side of image tensor.
     Adapted from keras.layers.ZeroPadding2D by @jweyn
     # Arguments
       padding: int, or tuple of 2 ints, or tuple of tuples of 2 ints.
-        - If int: the same symmetric padding 
+        - If int: the same symmetric padding
             is applied to height and width.
         - If tuple of 2 ints:
             interpreted as two different
@@ -61,7 +51,7 @@ class PeriodicPadding2D(ZeroPadding2D):
 
     def call(self, inputs):
         shape = inputs.shape
-        if self.data_format == 'channels_first':
+        if self.data_format == "channels_first":
             top_slice = slice(shape[2] - self.padding[0][0], shape[2])
             bottom_slice = slice(0, self.padding[0][1])
             left_slice = slice(shape[3] - self.padding[1][0], shape[3])
@@ -83,7 +73,7 @@ class PeriodicPadding2D(ZeroPadding2D):
 
 
 class PeriodicPadding3D(ZeroPadding3D):
-    """ Periodic-padding layer for 3D input (e.g. image).
+    """Periodic-padding layer for 3D input (e.g. image).
     This layer can add periodic rows, columns, and depth to an image tensor.
     Adapted from keras.layers.ZeroPadding3D by @jweyn
 
@@ -115,7 +105,7 @@ class PeriodicPadding3D(ZeroPadding3D):
             `(batch, first_padded_axis, second_padded_axis, third_axis_to_pad, depth)`
         - If `data_format` is `"channels_first"`:
             `(batch, depth, first_padded_axis, second_padded_axis, third_axis_to_pad)`
-    
+
     """
 
     def __init__(self, padding=(1, 1, 1), data_format=None, **kwargs):
@@ -123,7 +113,7 @@ class PeriodicPadding3D(ZeroPadding3D):
 
     def call(self, inputs):
         shape = inputs.shape
-        if self.data_format == 'channels_first':
+        if self.data_format == "channels_first":
             low_slice = slice(shape[2] - self.padding[0][0], shape[2])
             high_slice = slice(0, self.padding[0][1])
             top_slice = slice(shape[3] - self.padding[1][0], shape[3])
