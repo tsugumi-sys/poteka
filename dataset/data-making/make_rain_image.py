@@ -5,7 +5,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from scipy.interpolate import RBFInterpolator
+
+# from scipy.interpolate import RBFInterpolator
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 import random
 import argparse
 import sys
@@ -59,12 +62,22 @@ def make_img(
                 round(random.uniform(0.1, 0.8), 5),
             )
 
-            rbfi = RBFInterpolator(
-                y=df[["LON", "LAT"]],
-                d=df["hour-rain"],
-                kernel="gaussian",
-                epsilon=61,
-            )
+            # rbfi = RBFInterpolator(
+            #     y=df[["LON", "LAT"]],
+            #     d=df["hour-rain"],
+            #     kernel="gaussian",
+            #     epsilon=61,
+            # )
+
+            # Gaussian Process Regressor
+            kernel = C(1, (1e-3, 1e3)) * RBF(1, (1e-2, 1e1))
+            gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=15)
+
+            X = df[["LON", "LAT"]].values
+            y = df["hour-rain"].values
+
+            gp.fit(X, y)
+
             grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
             grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
             # xi, yi = np.meshgrid(grid_lon, grid_lat)
@@ -74,8 +87,10 @@ def make_img(
             )
             xfloat = xgrid.reshape(2, -1).T
 
-            z1 = rbfi(xfloat)
-            z1 = z1.reshape(50, 50)
+            # z1 = rbfi(xfloat)
+            y_pred, MSE = gp.predict(xfloat, return_std=True)
+            # z1 = z1.reshape(50, 50)
+            z1 = np.reshape(y_pred, (50, 50))
             rain_data = np.where(z1 > 0, z1, 0)
             rain_data = np.where(rain_data > 100, 100, rain_data)
 
