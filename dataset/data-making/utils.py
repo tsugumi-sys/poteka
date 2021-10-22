@@ -45,3 +45,4 @@ def tqdm_joblib(tqdm_object):
     finally:
         joblib.parallel.BatchCompletionCallBack = old_batch_callback
         tqdm_object.close()
+

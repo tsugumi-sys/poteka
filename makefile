@@ -5,13 +5,13 @@ preprocess_pressure_data: dataset/data-making/make_PRS_SLP_image.py
 	python dataset/data-making/make_PRS_SLP_image.py \
 		--data_root_path=../data \
 		--target=prs \
-		--n_jobs=5
+		--n_jobs=10
 
 preprocess_slp_data: dataset/data-making/make_PRS_SLP_image.py
 	python dataset/data-making/make_PRS_SLP_image.py \
 		--data_root_path=../data \
 		--target=slp \
-		--n_jobs=5
+		--n_jobs=10
 
 preprocess_humidity_data: dataset/data-making/make_humidity_image.py
 	python dataset/data-making/make_humidity_image.py \

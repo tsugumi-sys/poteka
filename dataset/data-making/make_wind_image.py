@@ -296,7 +296,7 @@ if __name__ == "__main__":
                         data_file_path=conf["data_file_path"],
                         csv_file_name=conf["csv_file_name"],
                         save_dir_path=conf["save_dir_path"],
-                        year=2013,
+                        year=conf["year"],
                         month=conf["month"],
                         date=conf["date"],
                     )
