@@ -28,3 +28,8 @@ preprocess_wind_data: dataset/data-making/make_wind_image.py
 	--data_root_path=../data \
 	--n_jobs=10 \
 	--target=abs
+
+preprocess_rain_data: dataset/data-making/make_rain_image.py
+	python dataset/data-making/make_rain_image.py \
+	--data_root_path=../data \
+	--n_jobs=10

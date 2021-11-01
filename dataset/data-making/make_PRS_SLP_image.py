@@ -23,10 +23,7 @@ from common.validations import is_ymd_valid  # noqa: E402
 logger = getLogger(__name__)
 logger.setLevel(INFO)
 basicConfig(
-    level=INFO,
-    filename="./dataset/data-making/log/create_pressure_data.log",
-    filemode="w",
-    format="%(asctime)s %(levelname)s %(name)s :%(message)s",
+    level=INFO, filename="./dataset/data-making/log/create_pressure_data.log", filemode="w", format="%(asctime)s %(levelname)s %(name)s :%(message)s",
 )
 logger.addHandler(StreamHandler(sys.stdout))
 

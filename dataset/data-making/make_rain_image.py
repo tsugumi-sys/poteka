@@ -9,14 +9,17 @@ import os
 # from scipy.interpolate import RBFInterpolator
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
+from sklearn.utils._testing import ignore_warnings
+from sklearn.exceptions import ConvergenceWarning
 import random
 import argparse
 import sys
 from typing import Union
-from logging import getLogger, INFO, basicConfig, StreamHandler
+from logging import captureWarnings, getLogger, INFO, basicConfig, StreamHandler
 import multiprocessing
 from joblib import Parallel, delayed
-from utils import gen_data_config
+from tqdm import tqdm
+from utils import gen_data_config, tqdm_joblib
 
 sys.path.append(".")  # relative path from where this file runs.
 from common.send_info import send_line  # noqa: E402
@@ -25,14 +28,13 @@ from common.validations import is_ymd_valid  # noqa: E402
 logger = getLogger(__name__)
 logger.setLevel(INFO)
 basicConfig(
-    level=INFO,
-    filename="./dataset/data-making/log/create_rain_data.log",
-    filemode="w",
-    format="%(asctime)s %(levelname)s %(name)s :%(message)s",
+    level=INFO, filename="./dataset/data-making/log/create_rain_data.log", filemode="w", format="%(asctime)s %(levelname)s %(name)s :%(message)s",
 )
+captureWarnings(True)
 logger.addHandler(StreamHandler(sys.stdout))
 
 
+@ignore_warnings(category=ConvergenceWarning)
 def make_img(
     data_file_path: str,  # something like ../data/one_day_data/{year}/{month}/{date}/{hour}-{minute}.csv
     csv_file_name: str,  # {hour}-{minute}.csv
@@ -56,11 +58,7 @@ def make_img(
         try:
             df = pd.read_csv(data_file_path, index_col=0)
             df["hour-rain--original"] = df["hour-rain"]
-            df["hour-rain"] = np.where(
-                df["hour-rain"] > 0,
-                df["hour-rain"],
-                round(random.uniform(0.1, 0.8), 5),
-            )
+            df["hour-rain"] = np.where(df["hour-rain"] > 0, df["hour-rain"], round(random.uniform(0.1, 0.8), 5),)
 
             # rbfi = RBFInterpolator(
             #     y=df[["LON", "LAT"]],
@@ -70,8 +68,8 @@ def make_img(
             # )
 
             # Gaussian Process Regressor
-            kernel = C(1, (1e-3, 1e3)) * RBF(1, (1e-2, 1e1))
-            gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=15)
+            kernel = C(1, (1e-5, 1e5)) * RBF(1, (1e-5, 1e5))
+            gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=15, random_state=123)
 
             X = df[["LON", "LAT"]].values
             y = df["hour-rain"].values
@@ -81,10 +79,7 @@ def make_img(
             grid_lon = np.round(np.linspace(120.90, 121.150, 50), decimals=3)
             grid_lat = np.round(np.linspace(14.350, 14.760, 50), decimals=3)
             # xi, yi = np.meshgrid(grid_lon, grid_lat)
-            xgrid = np.around(
-                np.mgrid[120.90:121.150:50j, 14.350:14.760:50j],
-                decimals=3,
-            )
+            xgrid = np.around(np.mgrid[120.90:121.150:50j, 14.350:14.760:50j], decimals=3,)
             xfloat = xgrid.reshape(2, -1).T
 
             # z1 = rbfi(xfloat)
@@ -105,11 +100,7 @@ def make_img(
             clevs = [0, 5, 7.5, 10, 15, 20, 30, 40, 50, 70, 100]
             cmap_data = [
                 (1.0, 1.0, 1.0),
-                (
-                    0.3137255012989044,
-                    0.8156862854957581,
-                    0.8156862854957581,
-                ),
+                (0.3137255012989044, 0.8156862854957581, 0.8156862854957581,),
                 (0.0, 1.0, 1.0),
                 (0.0, 0.8784313797950745, 0.501960813999176),
                 (0.0, 0.7529411911964417, 0.0),
@@ -128,10 +119,7 @@ def make_img(
             cbar = plt.colorbar(cs, orientation="vertical")
             cbar.set_label("mm/h")
             ax.scatter(
-                df["LON"],
-                df["LAT"],
-                marker="D",
-                color="dimgrey",
+                df["LON"], df["LAT"], marker="D", color="dimgrey",
             )
             for i, val in enumerate(df["hour-rain--original"]):
                 ax.annotate(val, (df["LON"][i], df["LAT"][i]))
@@ -170,17 +158,11 @@ def make_img(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="process pressure data.")
     parser.add_argument(
-        "--data_root_path",
-        type=str,
-        default="../../../data",
-        help="The root path of the data directory",
+        "--data_root_path", type=str, default="../../../data", help="The root path of the data directory",
     )
 
     parser.add_argument(
-        "--n_jobs",
-        type=int,
-        default=1,
-        help="The number of cpu cores to use",
+        "--n_jobs", type=int, default=1, help="The number of cpu cores to use",
     )
 
     args = parser.parse_args()
@@ -192,17 +174,17 @@ if __name__ == "__main__":
     if n_jobs > max_cores:
         n_jobs = max_cores
 
-    Parallel(n_jobs=n_jobs)(
-        delayed(make_img)(
-            data_file_path=conf["data_file_path"],
-            csv_file_name=conf["csv_file_name"],
-            save_dir_path=conf["save_dir_path"],
-            year=conf["year"],
-            month=conf["month"],
-            date=conf["date"],
-            target=args.target,
+    with tqdm_joblib(tqdm(desc="Create rain data", total=len(confs))):
+        Parallel(n_jobs=n_jobs)(
+            delayed(make_img)(
+                data_file_path=conf["data_file_path"],
+                csv_file_name=conf["csv_file_name"],
+                save_dir_path=conf["save_dir_path"],
+                year=conf["year"],
+                month=conf["month"],
+                date=conf["date"],
+            )
+            for conf in confs
         )
-        for conf in confs
-    )
 
-    send_line(f"Creating {args.target} data has finished")
+    send_line(f"Creating rain data has finished")
